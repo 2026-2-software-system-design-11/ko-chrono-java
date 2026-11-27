@@ -1,0 +1,76 @@
+package kochrono;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/** 문장 하나를 파서에 돌려 결과 목록으로 만든다. 계산은 벽시계 시각으로 한다 */
+final class Pipeline {
+    private static final List<Parser> PARSERS = List.of(RelativeDayParser::parse, OffsetParser::parse,
+            WeekdayParser::parse, AbsoluteDateParser::parse, RelativeMonthParser::parse, RelativeYearParser::parse,
+            TimeParser::parse, DurationParser::parse, RecurrenceParser::parse, HolidayParser::parse);
+
+    // "~까지", "~부터" 접미 감지. "3시~5시"의 "~"도 시작 표시로 본다. "다음주 중", "오늘 중에"도 마감
+    static final Pattern UNTIL = JsRegex.compile("^\\s*(전까지|까지|이내|안에|안으로|내로|중으로|중에(?![가-힣])|중(?![가-힣]))");
+    static final Pattern FROM = JsRegex.compile("^\\s*(부터|~)\\s*");
+    // "이번 주 내내"는 그 기간 전체
+    private static final Pattern WHOLE = JsRegex.compile("^\\s*내내");
+
+    private Pipeline() {
+    }
+
+    /** 원본의 parseLocal */
+    static List<LocalResult> run(String text, ResolveOptions opts) {
+        List<List<Fragment>> groups = Grouping.group(dedupe(text), text);
+        List<LocalResult> results = new ArrayList<>();
+        for (int gi = 0; gi < groups.size(); gi++) {
+            List<Fragment> g = groups.get(gi);
+            Fragment last = g.get(g.size() - 1);
+            String tail = Texts.slice(text, last.index() + last.text().length());
+            Matcher until = UNTIL.matcher(tail);
+            boolean hasUntil = until.find();
+            if (!hasUntil) {
+                until = WHOLE.matcher(tail);
+                hasUntil = until.find();
+            }
+            if (hasUntil && until.group().contains("내내")) {
+                last.components().whole = true;
+            } else if (hasUntil) {
+                last.components().isEnd = true;
+            }
+            if (FROM.matcher(tail).find()) {
+                last.components().isStart = true;
+            }
+            LocalResult r = Resolver.resolve(g, opts);
+            if (r == null) {
+                continue;
+            }
+            int end = r.endIndex + (hasUntil ? until.group().length() : 0);
+            // 조각이 공백으로 시작할 수 있다 ("오후 3시" 앞의 공백). index는 첫 글자를 가리키게
+            String raw = Texts.slice(text, g.get(0).index(), end);
+            r.index = g.get(0).index() + (raw.length() - JsRegex.trimStart(raw).length());
+            r.text = JsRegex.trim(raw);
+            results.add(r);
+        }
+        return results;
+    }
+
+    /** 모든 파서의 조각을 모으고 겹치는 조각은 더 긴 것만 남긴다 */
+    private static List<Fragment> dedupe(String text) {
+        List<Fragment> sorted = new ArrayList<>();
+        for (Parser p : PARSERS) {
+            sorted.addAll(p.parse(text));
+        }
+        sorted.sort(Comparator.comparingInt((Fragment f) -> f.text().length()).reversed());
+        List<Fragment> kept = new ArrayList<>();
+        Taken taken = new Taken();
+        for (Fragment f : sorted) {
+            if (taken.take(f.index(), f.index() + f.text().length())) {
+                kept.add(f);
+            }
+        }
+        return kept;
+    }
+}
