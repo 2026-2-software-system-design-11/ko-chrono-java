@@ -160,7 +160,63 @@ final class StressCases {
             new Case("5시 10분 전에 도착", "2026-10-30T16:50")
     );
 
-    static final List<Case> CASES = concat(PART_1, PART_2, PART_3);
+    static final List<Case> PART_4 = List.of(
+            // ---------- 날짜가 아닌 숫자, 말 (null) ----------
+            new Case("3일 연속 야근 중", null),
+            new Case("2시간짜리 영화", null),
+            new Case("1월생이에요", null),
+            new Case("5월 생일 파티 사진 보내줘", "2027-05-01T00:00"),  // 시제는 모른다 (규칙 13)
+            new Case("3박 4일 여행 어땠어?", null),
+            new Case("7일간의 기록", null),
+            new Case("하루 3시간 공부", null),
+            new Case("주 5일 근무", null),
+            new Case("월 300 벌어", null),
+            new Case("일 처리가 빠르네", null),
+            new Case("내가 낼게", null),
+            new Case("일요일마다 바빠서", "2026-11-01T00:00"),
+            new Case("평일엔 힘들어", null),
+            new Case("금주 결심했어", null),
+            new Case("전주 비빔밥 먹고 싶다", null),
+            new Case("차주에게 연락해 주세요", null),
+            new Case("전월세 알아보는 중", null),
+            new Case("3월 3일은 삼겹살데이", "2027-03-03T00:00"),
+            new Case("오전반 오후반 나눠서", null),
+            new Case("오후 반차 썼어", null),
+            new Case("나중에 얘기해", null),
+            new Case("언제 한번 밥 먹자", null),
+            new Case("시간 될 때 연락해", null),
+            new Case("조만간 보자", null),
+            new Case("다음에 보자", null),
+            new Case("버스 7번 타고 와", null),
+            new Case("3층 회의실", null),
+            new Case("1시간 거리야", null),
+            new Case("24시 편의점", null),
+            new Case("10분 걸려", null),
+            new Case("2배 빨라짐", null),
+            new Case("1등 했어", null),
+            new Case("30일 챌린지 시작", null),
+            new Case("100일 기념", null),
+            new Case("아이폰 15 샀어", null),
+            new Case("4시간 동안 줄 섰어", null),
+            new Case("한두 시간이면 돼", null),
+            // ---------- 긴 문장, 여러 표현 ----------
+            new Case("그럼 일단 내일 오후 3시에 줌으로 하고 결과 보고 다음주에 다시 잡죠", "2026-10-31T15:00"),
+            new Case("혹시 다음주 화요일이나 수요일 저녁 시간 되시나요?", "2026-11-03T00:00"),
+            new Case("아 그날은 안 되고 목요일은 괜찮아", "2026-11-05T00:00"),
+            new Case("오늘은 좀 힘들 것 같고 내일 오전 어때", "2026-10-30T00:00"),
+            new Case("회의 자료는 월요일 오전 10시까지 공유해 주세요", REF, "2026-11-02T10:00"),
+            new Case("택배 내일 도착한대", "2026-10-31T00:00"),
+            new Case("병원 예약 다음주 수요일 11시 20분", "2026-11-04T11:20"),
+            new Case("치과 11월 9일 오후 4시 반", "2026-11-09T16:30"),
+            new Case("엄마 생신 12월 12일이야", "2026-12-12T00:00"),
+            new Case("이번 토요일 결혼식 1시", "2026-10-31T00:00"),  // 사이에 명사가 끼면 묶지 않는다
+            new Case("토요일 1시 결혼식", "2026-10-31T13:00"),
+            new Case("공연 11월 21일 토요일 저녁 7시 30분", "2026-11-21T19:30"),
+            new Case("면접 11월 4일 수요일 오전 9시 50분까지 도착", REF, "2026-11-04T09:50"),
+            new Case("항공권 12/30 출발 1/3 도착", "2026-12-30T00:00")
+    );
+
+    static final List<Case> CASES = concat(PART_1, PART_2, PART_3, PART_4);
 
     @SafeVarargs
     private static List<Case> concat(List<Case>... lists) {
