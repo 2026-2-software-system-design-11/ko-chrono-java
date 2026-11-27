@@ -39,6 +39,12 @@ final class Components {
     /** "내일 이 시간": 기준 시각의 시와 분을 쓴다 */
     boolean sameTime;
 
+    /** 음력 명절. 양력 날짜는 resolve가 음력 표에서 찾는다 */
+    LunarHoliday lunar;
+
+    /** "음력 3월 3일", "음력 윤5월 1일" */
+    LunarDate lunarDate;
+
     /** 연 단위 이동 (내년 = +1). 있으면 "지난 월일은 내년" 규칙을 쓰지 않는다 */
     Integer yearOffset;
 
@@ -76,4 +82,7 @@ final class Components {
     enum MonthPart { START, MIDDLE, END }
 
     enum LunarHoliday { SEOLLAL, CHUSEOK, BUDDHA }
+
+    record LunarDate(int month, int day, boolean leap) {
+    }
 }
