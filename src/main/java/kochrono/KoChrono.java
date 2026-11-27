@@ -73,6 +73,27 @@ public final class KoChrono {
         return parseEvent(text, null);
     }
 
+    /**
+     * parse 결과를 iCalendar(.ics) 문자열로 바꾼다. 시각이 있으면 DTSTART와 DTEND(끝이 없으면 durationMinutes 뒤),
+     * 없으면 종일 일정(VALUE=DATE, DTEND는 마지막 날의 다음날). 반복이면 RRULE을 넣는다.
+     */
+    public static String toICS(ParseResult result, IcsOptions options) {
+        return Ics.toICS(result.text(), result.date(), result.end(), result.hasTime(), result.recurrence(), options);
+    }
+
+    public static String toICS(ParseResult result) {
+        return toICS(result, null);
+    }
+
+    /** parseEvent 결과를 iCalendar 문자열로 바꾼다. 날짜가 없으면 null */
+    public static String toICS(ParsedEvent event, IcsOptions options) {
+        return Ics.toICS(event.title(), event.date(), event.end(), event.hasTime(), event.recurrence(), options);
+    }
+
+    public static String toICS(ParsedEvent event) {
+        return toICS(event, null);
+    }
+
     private static ParseResult toResult(LocalResult r, Function<LocalDateTime, ZonedDateTime> at) {
         Recurrence recurrence = null;
         if (r.recur != null) {

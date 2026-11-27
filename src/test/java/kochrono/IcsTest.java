@@ -35,4 +35,13 @@ class IcsTest {
     private static ParseResult p(String s) {
         return KoChrono.parse(s, OPTS);
     }
+
+    @Test @DisplayName("timezone이 없으면 UTC로") void c3() {
+        List<String> ev = event(KoChrono.toICS(ev("내일 오후 3시 치과"),
+                IcsOptions.defaults().withUid("u").withNow(REF.toInstant())));
+        assertTrue(ev.contains("DTSTART:20261031T060000Z"));
+        assertTrue(ev.contains("DTEND:20261031T070000Z"));
+    }
+
+    @Test @DisplayName("날짜가 없으면 null") void c11() { assertNull(KoChrono.toICS(ev("우유 사기"))); }
 }
