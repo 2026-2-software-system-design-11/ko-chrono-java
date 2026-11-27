@@ -15,7 +15,13 @@ class RecurrenceBinderTest {
         return KoChrono.parse(s, OPTS).recurrence().rrule();
     }
 
+    @Test void 앞뒤의_마감은_UNTIL() {
+        assertEquals("FREQ=WEEKLY;BYDAY=MO;UNTIL=20261130T235900", rrule("다음달까지 매주 월요일 9시"));
+        assertEquals("FREQ=DAILY;UNTIL=20261031", rrule("이번달까지 매일"));
+    }
+
     @Test void 시작과_횟수() {
+        assertEquals(9, KoChrono.parse("다다음주부터 매주 월요일", OPTS).date().getDayOfMonth());
         assertEquals("FREQ=WEEKLY;BYDAY=WE;COUNT=8", rrule("매주 수요일 오후 2시, 총 8회"));
         assertEquals("FREQ=DAILY", rrule("매일 3번 약 먹기"));
     }
