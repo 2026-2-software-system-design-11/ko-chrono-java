@@ -36,6 +36,11 @@ class IcsTest {
         return KoChrono.parse(s, OPTS);
     }
 
+    @Test @DisplayName("내일 오후 3시부터 5시까지 회의 (끝이 있으면 DTEND)") void c2() {
+        assertTrue(event(KoChrono.toICS(ev("내일 오후 3시부터 5시까지 회의"), FIXED)).containsAll(List.of(
+                "DTSTART;TZID=Asia/Seoul:20261031T150000", "DTEND;TZID=Asia/Seoul:20261031T170000")));
+    }
+
     @Test @DisplayName("timezone이 없으면 UTC로") void c3() {
         List<String> ev = event(KoChrono.toICS(ev("내일 오후 3시 치과"),
                 IcsOptions.defaults().withUid("u").withNow(REF.toInstant())));
@@ -43,5 +48,13 @@ class IcsTest {
         assertTrue(ev.contains("DTEND:20261031T070000Z"));
     }
 
+    @Test @DisplayName("durationMinutes") void c4() {
+        assertTrue(event(KoChrono.toICS(ev("내일 오후 3시 치과"), FIXED.withDurationMinutes(30)))
+                .contains("DTEND;TZID=Asia/Seoul:20261031T153000"));
+    }
+
     @Test @DisplayName("날짜가 없으면 null") void c11() { assertNull(KoChrono.toICS(ev("우유 사기"))); }
+    @Test @DisplayName("제목이 없으면 문장에서 찾은 부분") void c12() {
+        assertTrue(event(KoChrono.toICS(p("내일 3시"), FIXED)).contains("SUMMARY:내일 3시"));
+    }
 }

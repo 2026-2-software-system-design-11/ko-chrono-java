@@ -51,7 +51,16 @@ final class Ics {
         return String.join("\r\n", lines);
     }
 
+    /** 시간대 옵션이 있으면 그 시간대의 벽시계, 없으면 값이 가진 시간대의 벽시계 */
+    private static LocalDateTime wall(IcsOptions o, ZonedDateTime d) {
+        return o.timezone() != null ? WallClock.toWall(d, o.timezone()) : d.toLocalDateTime();
+    }
+
     private static String at(IcsOptions o, String name, ZonedDateTime d) {
-        return name + ":" + utc(d.toInstant());
+        if (o.timezone() == null) {
+            return name + ":" + utc(d.toInstant());
+        }
+        LocalDateTime w = wall(o, d);
+        return name + ";TZID=" + o.timezone().getId() + ":" + ymd(w) + "T" + hms(w);
     }
 }
