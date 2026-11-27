@@ -16,6 +16,14 @@ final class TimeParser {
     // "오후 3시", "3시 반", "오전 10시 30분", "새벽 2시", "저녁 7시", "낮 12시", "15시", "7시30", "3시 정각"
     private static final Pattern CLOCK = JsRegex.compile("(" + PERIOD + "|정오)?\\s*(" + HOUR_WORD
             + ")\\s*시(?!간)\\s*(?:(반)|(\\d{1,2})\\s*분|(\\d{2})(?![\\d가-힣])|정각)?");
+    // "5시 10분 전"은 4시 50분
+    private static final Pattern BEFORE = JsRegex.compile("(" + PERIOD + ")?\\s*(" + HOUR_WORD
+            + ")\\s*시\\s*(\\d{1,2})\\s*분\\s*전(?=[\\s,에까]|$)");
+    // "오전 중으로", "오후 중에"는 그 시간대의 끝(12시, 18시)까지
+    private static final Pattern HALF_DAY = JsRegex.compile("(오전|오후)\\s*중(?!순)(?:으로|에는|에)?");
+    // "3~5시", "오후 3~5시"는 "오후 3"과 "5시" 두 조각 (KoChrono가 "~"로 구간을 합친다)
+    private static final Pattern SHORT_RANGE = JsRegex.compile("(" + PERIOD + ")?\\s*(" + HOUR_WORD + ")\\s*~\\s*(("
+            + HOUR_WORD + ")\\s*시)");
 
     private TimeParser() {
     }
@@ -40,6 +48,9 @@ final class TimeParser {
     static List<Fragment> parse(String text) {
         List<Fragment> out = new ArrayList<>();
         Taken taken = new Taken();
+        shortRange(text, out, taken);
+        before(text, out, taken);
+        halfDay(text, out, taken);
         clock(text, out, taken);
         return out;
     }
@@ -50,6 +61,44 @@ final class TimeParser {
         c.minute = minute;
         c.meridiem = meridiem;
         return c;
+    }
+
+    private static void shortRange(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = SHORT_RANGE.matcher(text); m.find(); ) {
+            Long a = KoreanNumber.parse(m.group(2));
+            Long b = KoreanNumber.parse(m.group(4));
+            if (a == null || b == null || a > 24 || b > 24 || !taken.take(m.start(), m.end())) {
+                continue;
+            }
+            String whole = m.group();
+            String startText = JsRegex.trimEnd(whole.substring(0, whole.indexOf('~')));
+            out.add(new Fragment(startText, m.start(),
+                    time(applyMeridiem(m.group(1), a.intValue()), 0, m.group(1) != null)));
+            out.add(new Fragment(m.group(3), m.start(3), time(b == 24 ? 0 : b.intValue(), 0, false)));
+        }
+    }
+
+    private static void before(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = BEFORE.matcher(text); m.find(); ) {
+            Long raw = KoreanNumber.parse(m.group(2));
+            int minutes = Integer.parseInt(m.group(3));
+            if (raw == null || raw > 24 || minutes > 59 || !taken.take(m.start(), m.end())) {
+                continue;
+            }
+            int total = applyMeridiem(m.group(1), raw.intValue()) * 60 - minutes;
+            // 원본처럼 내림 나눗셈과 부호가 남는 나머지 ("0시 10분 전"은 -1시 -10분, resolve가 전날로 굴린다)
+            out.add(new Fragment(m.group(), m.start(), time(Math.floorDiv(total, 60), total % 60, m.group(1) != null)));
+        }
+    }
+
+    private static void halfDay(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = HALF_DAY.matcher(text); m.find(); ) {
+            if (taken.take(m.start(), m.end())) {
+                Components c = time(m.group(1).equals("오전") ? 12 : 18, 0, true);
+                c.isEnd = true;
+                out.add(Fragment.of(m, c));
+            }
+        }
     }
 
     private static void clock(String text, List<Fragment> out, Taken taken) {
