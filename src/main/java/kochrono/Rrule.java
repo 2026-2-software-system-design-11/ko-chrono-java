@@ -1,5 +1,6 @@
 package kochrono;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -21,6 +22,12 @@ final class Rrule {
         if (r.interval() > 1) {
             parts.add("INTERVAL=" + r.interval());
         }
+        if (r.byMonth() != null) {
+            parts.add("BYMONTH=" + r.byMonth());
+        }
+        if (r.byMonthDay() != null) {
+            parts.add("BYMONTHDAY=" + r.byMonthDay());
+        }
         if (!r.byWeekday().isEmpty()) {
             String nth = r.byWeekdayNth() != null && r.byWeekdayNth() != 0 ? String.valueOf(r.byWeekdayNth()) : "";
             List<String> days = r.byWeekday().stream()
@@ -28,6 +35,14 @@ final class Rrule {
                     .map(d -> nth + CODE[d])
                     .toList();
             parts.add("BYDAY=" + String.join(",", days));
+        }
+        if (r.until() != null) {
+            LocalDateTime u = r.until();
+            String date = u.getYear() + pad(u.getMonthValue()) + pad(u.getDayOfMonth());
+            parts.add("UNTIL=" + (dateOnly ? date
+                    : date + "T" + pad(u.getHour()) + pad(u.getMinute()) + pad(u.getSecond())));
+        } else if (r.count() != null && r.count() != 0) {
+            parts.add("COUNT=" + r.count());
         }
         return String.join(";", parts);
     }

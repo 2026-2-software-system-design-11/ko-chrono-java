@@ -24,4 +24,20 @@ record RecurSpec(Frequency freq, int interval, List<Integer> byWeekday, Integer 
     RecurSpec withNth(Integer nth) {
         return new RecurSpec(freq, interval, byWeekday, nth, byMonthDay, byMonth, until, count);
     }
+
+    RecurSpec withMonthDay(Integer monthDay) {
+        return new RecurSpec(freq, interval, byWeekday, byWeekdayNth, monthDay, byMonth, until, count);
+    }
+
+    RecurSpec withMonth(Integer month) {
+        return new RecurSpec(freq, interval, byWeekday, byWeekdayNth, byMonthDay, month, until, count);
+    }
+
+    RecurSpec withUntil(LocalDateTime u) {
+        return new RecurSpec(freq, interval, byWeekday, byWeekdayNth, byMonthDay, byMonth, u, count);
+    }
+
+    RecurSpec withCount(Integer n) {
+        return new RecurSpec(freq, interval, byWeekday, byWeekdayNth, byMonthDay, byMonth, until, n);
+    }
 }
