@@ -74,3 +74,50 @@
 - 원본의 구간 합치기는 끝 요일이 시작보다 앞이면 B의 `Date`를 그 자리에서 7일 뒤로 고친다. 합치지 못해도 B에 그 값이 남으므로 `RangeMerger`도 B에 같은 값을 쓴다.
 - 원본의 비교는 실제 시점끼리, Java의 계산 중 비교는 벽시계 시각끼리 한다. 서머타임이 끝나며 같은 벽시계 시각이 두 번 오는 한 시간 안에서만 다를 수 있다.
 
+## 시간대 (`Intl.DateTimeFormat`에서 `ZoneId`로)
+
+- 실제 시점에서 벽시계로: `ZonedDateTime.withZoneSameInstant`.
+- `timezone` 옵션이 있을 때 벽시계에서 실제 시점으로: 원본 `fromWallClock`의 계산(벽시계를 UTC로 읽고 그 시점의 오프셋을 두 번 맞춤)을 `ZoneRules.getOffset`으로 그대로 옮겼다. 서머타임이 시작되어 없는 시각(뉴욕 3월 8일 2:30)은 원본처럼 1:30 EST가 된다. `ZonedDateTime.of`는 3:30 EDT로 옮기므로 쓰지 않았다.
+- `timezone`이 없을 때: 원본은 로컬 `Date` 생성자를 쓰고, 없는 시각은 서머타임 전의 오프셋으로 읽는다. `ZonedDateTime.of`가 같은 결과를 낸다.
+
+## 정규식
+
+| 원본 | Java | 이유 |
+|---|---|---|
+| `\s` | JavaScript가 잡는 공백 글자를 모두 적은 글자 묶음 (`JsRegex.SPACE`) | Java의 `\s`는 ASCII 공백만 잡는다. `UNICODE_CHARACTER_CLASS`는 `\d`까지 유니코드 숫자로 넓혀서 쓰지 않았다 |
+| `$` (m 깃발 없음) | `\z` | Java의 `$`는 마지막 줄바꿈 앞에서도 맞는다 |
+| `trim`, `trimStart`, `trimEnd` | `JsRegex.trim` 등 | Java의 `String.trim`은 U+0020 이하만, `strip`은 NBSP를 자르지 않는다 |
+| `(?<!\d\s*박\s*)(?<!(?<![가-힣])주\s*)` (`absoluteDate.ts`) | `AbsoluteDateParser.afterNightsOrWeek` | 길이가 정해지지 않은 lookbehind는 Java에서 컴파일되지 않는다. 맞은 자리 앞을 거꾸로 보며 공백을 건너뛰고 "숫자+박" 또는 "(한글 아닌 글자 뒤의) 주"인지 본다. 공백은 이어져 있으므로 같은 뜻이다. 걸리면 정규식 엔진처럼 다음 글자부터 다시 찾는다 |
+| `'gi'` 깃발 (`3pm`) | `CASE_INSENSITIVE` | ASCII만 대소문자를 무시하는 점이 같다 |
+| 정규식 안의 가운뎃점 글자 | 유니코드 이스케이프 `\u00B7` | 같은 글자를 이스케이프로 적었다 |
+| `split(/\s+/)` | `Pattern.split(s, -1)` | 끝의 빈 문자열을 원본처럼 남긴다 |
+
+원본 정규식은 `u` 깃발이 없어 UTF-16 단위로, Java는 코드 포인트 단위로 맞춘다. 원본 패턴의 글자는 모두 BMP 안의 글자이고 부정 묶음(`[^가-힣]`)은 둘레를 보는 자리에서만 쓰여, 이모지가 섞인 문장도 결과가 같다. `index`는 원본처럼 UTF-16 위치다.
+
+## 내부 구조
+
+원본 파일과 Java 클래스는 아래처럼 맞는다.
+
+| 원본 | Java |
+|---|---|
+| `types.ts` | `Components`, `Fragment`, `RecurSpec`, 공개 record들 |
+| `util/number.ts` | `KoreanNumber` |
+| `util/timezone.ts` | `WallClock` |
+| `util/lunarHolidays.ts` | `LunarCalendar` |
+| `parsers/*.ts` | `*Parser` |
+| `parsers/recurrence.ts`의 `toRRule` | `Rrule` |
+| `resolve.ts` | `Grouping`, `Resolver`, `Days`, `Periods`, `Ambiguities`, `RecurrenceResolver`, `Calendars` |
+| `index.ts` | `KoChrono`, `Pipeline`, `RangeMerger`, `RecurrenceBinder` |
+| `tense.ts` | `PastTense` |
+| `event.ts` | `EventTitle` |
+| `ics.ts` | `Ics` |
+
+- 원본의 `Components`는 값이 없으면 속성이 없다(undefined). Java에서는 숫자 칸을 null로, 참으로만 쓰는 표시는 `boolean`으로 두었다. 합치기(`Object.assign`)는 뒤 조각의 null이 아닌 값이 앞 값을 덮는 것으로 옮겼다.
+- 원본 `resolve`는 한 함수 안에서 단계별로 계산한다. Java에서는 단계를 `Days`(날짜), `Resolver`(시각), `Periods`(끝), `Ambiguities`(모호성)로 나눴다. 순서와 조건은 원본과 같다.
+
+## 시험
+
+- 원본 시험은 실행 환경의 로컬 시간대로 `Date`를 만든다. Java 시험은 `ZoneId.systemDefault()`로 같은 일을 한다. 원본 CI처럼 `TZ`를 Asia/Seoul, UTC, America/Los_Angeles로 바꿔도 통과하는 것을 확인했다.
+- 원본이 실제 시점(`Date.UTC`)을 비교하는 시험은 `Instant`끼리 비교한다.
+- 원본의 `toEqual`은 값이 undefined인 칸을 무시하고, `toMatchObject`는 기대한 칸만 본다. 시험 도우미 `same`, `matches`가 같은 일을 한다.
+- 시험 이름의 가운뎃점은 쉼표로 바꿨다. 입력 문장과 기대값은 바꾸지 않았다.
