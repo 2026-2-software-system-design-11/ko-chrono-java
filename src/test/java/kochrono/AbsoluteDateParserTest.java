@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 
 class AbsoluteDateParserTest {
     @Test void 연월일과_ISO() {
+        Components c = one(AbsoluteDateParser.parse("2027년 1월 2일")).components();
+        assertEquals(List.of(2027, 1, 2), List.of(c.year, c.month, c.day));
         Components iso = one(AbsoluteDateParser.parse("2027-01-01T09:00")).components();
         assertEquals(List.of(2027, 1, 1, 9, 0), List.of(iso.year, iso.month, iso.day, iso.hour, iso.minute));
         assertTrue(iso.meridiem);
@@ -18,5 +20,13 @@ class AbsoluteDateParserTest {
         assertEquals(2027, one(AbsoluteDateParser.parse("27.1.2")).components().year);
         assertEquals(1970, one(AbsoluteDateParser.parse("70.5.6")).components().year);
         assertEquals(1950, AbsoluteDateParser.expandYear("0050"));
+    }
+
+    @Test void 빗금과_한글_월일() {
+        Components c = one(AbsoluteDateParser.parse("11/5")).components();
+        assertEquals(List.of(11, 5), List.of(c.month, c.day));
+        Components h = one(AbsoluteDateParser.parse("유월 이십오일")).components();
+        assertEquals(List.of(6, 25), List.of(h.month, h.day));
+        assertTrue(AbsoluteDateParser.parse("오일 교환").isEmpty());
     }
 }
