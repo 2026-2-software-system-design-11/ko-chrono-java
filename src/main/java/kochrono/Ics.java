@@ -74,7 +74,7 @@ final class Ics {
         if (!hasTime) {
             LocalDateTime first = wall(o, date);
             LocalDateTime last = end != null ? wall(o, end) : first;
-            LocalDateTime after = last.plusDays(1);
+            LocalDateTime after = Calendars.constructed(last).plusDays(1);
             lines.add("DTSTART;VALUE=DATE:" + ymd(first));
             lines.add("DTEND;VALUE=DATE:" + ymd(after));
         }

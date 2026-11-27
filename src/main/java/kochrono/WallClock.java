@@ -14,9 +14,9 @@ final class WallClock {
     private WallClock() {
     }
 
-    /** 실제 시점을 그 시간대의 벽시계 시각으로 */
+    /** 실제 시점을 그 시간대의 벽시계 시각으로. 원본은 그 필드로 Date를 다시 만들므로 0~99년은 1900년대가 된다 */
     static LocalDateTime toWall(ZonedDateTime instant, ZoneId zone) {
-        return instant.withZoneSameInstant(zone).toLocalDateTime();
+        return Calendars.constructed(instant.withZoneSameInstant(zone).toLocalDateTime());
     }
 
     /**
@@ -25,7 +25,8 @@ final class WallClock {
      */
     static ZonedDateTime fromWall(LocalDateTime wall, ZoneId zone) {
         ZoneRules rules = zone.getRules();
-        Instant asUtc = wall.toInstant(ZoneOffset.UTC);
+        // 원본의 Date.UTC도 0~99년을 1900년대로 읽는다
+        Instant asUtc = Calendars.constructed(wall).toInstant(ZoneOffset.UTC);
         int first = rules.getOffset(asUtc).getTotalSeconds();
         int second = rules.getOffset(asUtc.minusSeconds(first)).getTotalSeconds();
         return asUtc.minusSeconds(second).atZone(zone);

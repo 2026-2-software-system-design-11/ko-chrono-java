@@ -27,6 +27,11 @@ final class Calendars {
         return YearMonth.of(Math.toIntExact(year), 1).plusMonths(m0);
     }
 
+    /** 원본의 {@code new Date(y, m0, day, h, mi)}: 같은 필드로 생성자를 부른 값. 0~99년은 1900년대가 된다 */
+    static LocalDateTime constructed(LocalDateTime d) {
+        return dayCountedFrom(yearMonth(d.getYear(), d.getMonthValue() - 1), d.getDayOfMonth()).atTime(d.toLocalTime());
+    }
+
     /** 그날 0시에서 hour시간 minute분 뒤. "0시 10분 전"(-1시 -10분)은 전날 23:50이 된다 */
     static LocalDateTime atClock(LocalDate day, long hour, long minute) {
         return day.atStartOfDay().plusHours(hour).plusMinutes(minute);

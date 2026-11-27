@@ -32,7 +32,8 @@ final class RecurrenceResolver {
         // 규칙 34: "10주 동안 매주 월요일"은 오늘(또는 "A부터"의 A)부터 그 기간의 마지막 날 23:59까지
         if (c.durationDays != null || c.durationMonths != null) {
             // N달 뒤 같은 날의 전날까지. 그 달에 없는 날이면 말일로 맞춘다 (11/30에서 3달이면 2/28의 전날)
-            YearMonth month = YearMonth.from(today).plusMonths(c.durationMonths != null ? c.durationMonths : 0);
+            YearMonth month = Calendars.yearMonth(today.getYear(),
+                    today.getMonthValue() - 1 + (c.durationMonths != null ? c.durationMonths : 0));
             LocalDateTime until = Calendars.sameDayIn(month, today.getDayOfMonth())
                     .plusDays((c.durationDays != null ? c.durationDays : 0) - 1).atTime(23, 59);
             if (until.isBefore(d)) {
@@ -74,7 +75,7 @@ final class RecurrenceResolver {
         }
         if (r.freq() == Frequency.WEEKLY) {
             for (int i = 0; i < 14; i++) {
-                LocalDateTime day = today.plusDays(i);
+                LocalDateTime day = Calendars.constructed(today).plusDays(i);
                 if (r.byWeekday().contains(Calendars.weekdayNumber(day.toLocalDate())) && o.ok(o.at(day))) {
                     return o.at(day);
                 }
@@ -83,7 +84,7 @@ final class RecurrenceResolver {
         }
         if (r.freq() == Frequency.MONTHLY) {
             for (int k = 0; k < 24; k++) {
-                YearMonth month = YearMonth.from(today).plusMonths(k);
+                YearMonth month = Calendars.yearMonth(today.getYear(), today.getMonthValue() - 1 + k);
                 Integer dom = r.byWeekdayNth() != null
                         ? Calendars.nthWeekday(month, r.byWeekday().get(0), r.byWeekdayNth())
                         : r.byMonthDay() == -1 ? Integer.valueOf(month.lengthOfMonth()) : r.byMonthDay();
@@ -99,7 +100,7 @@ final class RecurrenceResolver {
         }
         // YEARLY: 2월 29일은 다음 윤년까지
         for (int k = 0; k < 9; k++) {
-            YearMonth month = YearMonth.of(today.getYear() + k, r.byMonth());
+            YearMonth month = Calendars.yearMonth(today.getYear() + k, r.byMonth() - 1);
             if (!month.isValidDay(r.byMonthDay())) {
                 continue;
             }

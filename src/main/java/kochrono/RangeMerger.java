@@ -60,7 +60,7 @@ final class RangeMerger {
         // ("11월 28일부터 2일까지"처럼 시작보다 이르면 다음 달)
         // 그 달에 없는 날("11월 1일부터 31일까지")은 원본처럼 넘치는 만큼 다음 달로 간다
         if (Grouping.isDayOnly(bc)) {
-            YearMonth month = YearMonth.from(a.date);
+            YearMonth month = Calendars.yearMonth(a.date.getYear(), a.date.getMonthValue() - 1);
             LocalTime time = end.toLocalTime().withSecond(0).withNano(0);
             end = Calendars.dayCountedFrom(month, bc.day).atTime(time);
             if (end.isBefore(a.date)) {
@@ -78,7 +78,7 @@ final class RangeMerger {
             }
         }
         if (b.end == null && !b.hasTime) {
-            end = end.toLocalDate().atTime(23, 59);
+            end = Calendars.constructed(end.toLocalDate().atTime(23, 59));
         }
         return end;
     }

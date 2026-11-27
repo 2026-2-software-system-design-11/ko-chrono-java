@@ -21,5 +21,13 @@ class DateRulesTest {
         assertEquals(at(1950, 3, 1, 0, 0), date("3월 1일", at(50, 6, 1, 10, 0), "UTC"));
         assertEquals(at(1950, 7, 1, 0, 0), date("다음달", at(50, 6, 1, 10, 0), "UTC"));
         assertEquals(at(1950, 1, 1, 0, 0), date("0050-01-01", at(2026, 10, 30, 14, 0), "UTC"));
+        // 매주 반복의 날짜도 생성자로 만든다 (1950-06-05는 월요일)
+        assertEquals(at(1950, 6, 5, 0, 0), date("매주 월요일", at(50, 6, 1, 10, 0), "UTC"));
+    }
+
+    @Test void timezone_옵션이_있으면_기준_시각부터_1900년대가_된다() {
+        ParseOptions o = ParseOptions.defaults().withReferenceDate(at(50, 6, 1, 10, 0).atZone(ZoneId.of("UTC")))
+                .withTimezone("UTC");
+        assertEquals(at(1951, 3, 1, 0, 0), KoChrono.parse("3월 1일", o).date().toLocalDateTime());
     }
 }

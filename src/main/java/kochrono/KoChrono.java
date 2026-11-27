@@ -28,7 +28,9 @@ public final class KoChrono {
         ZonedDateTime ref = o.referenceDate() != null ? o.referenceDate()
                 : o.timezone() != null ? ZonedDateTime.now(o.timezone()) : ZonedDateTime.now();
         ZoneId zone = o.timezone() != null ? o.timezone() : ref.getZone();
-        ResolveOptions opts = new ResolveOptions(WallClock.toWall(ref, zone),
+        // timezone 옵션이 없으면 원본은 기준 Date를 그대로 쓰고, 있으면 그 시간대의 벽시계로 Date를 다시 만든다
+        LocalDateTime wallRef = o.timezone() != null ? WallClock.toWall(ref, zone) : ref.toLocalDateTime();
+        ResolveOptions opts = new ResolveOptions(wallRef,
                 o.weekStart() != null ? o.weekStart() : WeekStart.MONDAY,
                 o.defaultHour() != null ? o.defaultHour() : 0);
         // 그 시간대의 벽시계로 계산하고, 결과를 실제 시점으로 되돌린다

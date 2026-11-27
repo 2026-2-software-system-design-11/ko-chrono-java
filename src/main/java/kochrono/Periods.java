@@ -1,7 +1,6 @@
 package kochrono;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
@@ -57,9 +56,9 @@ final class Periods {
         if (c.weekOffset != null && c.weekday == null) {
             end = end.plusDays(6);
         } else if (c.monthOffset != null && c.monthPart == null && c.day == null && !c.sameDay) {
-            end = YearMonth.from(end).atEndOfMonth().atStartOfDay();
+            end = Calendars.yearMonth(end.getYear(), end.getMonthValue() - 1).atEndOfMonth().atStartOfDay();
         } else if ((c.year != null || c.yearOffset != null) && c.month == null && !c.sameDay) {
-            end = LocalDate.of(end.getYear(), 12, 31).atStartOfDay();
+            end = Calendars.yearMonth(end.getYear(), 11).atDay(31).atStartOfDay();
         }
         return end.toLocalDate().atTime(23, 59);
     }
