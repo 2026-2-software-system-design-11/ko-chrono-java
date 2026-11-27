@@ -65,7 +65,7 @@ final class Pipeline {
             comps.add(Grouping.merge(g));
             resultGroups.add(g);
         }
-        RangeMerger.Merged merged = RangeMerger.merge(text, results, resultGroups, comps);
+        RangeMerger.Merged merged = RangeMerger.merge(text, results, resultGroups, comps, opts);
         return RecurrenceBinder.bind(text, merged.results(), merged.groups(), merged.comps(), opts);
     }
 

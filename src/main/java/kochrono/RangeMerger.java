@@ -15,7 +15,8 @@ final class RangeMerger {
     private RangeMerger() {
     }
 
-    static Merged merge(String text, List<LocalResult> results, List<List<Fragment>> groups, List<Components> comps) {
+    static Merged merge(String text, List<LocalResult> results, List<List<Fragment>> groups, List<Components> comps,
+                        ResolveOptions opts) {
         List<LocalResult> merged = new ArrayList<>();
         List<List<Fragment>> mergedGroups = new ArrayList<>();
         List<Components> mergedComps = new ArrayList<>();
@@ -36,7 +37,7 @@ final class RangeMerger {
                 merged.add(a);
                 continue;
             }
-            LocalDateTime end = endOf(a, b, comps.get(i + 1));
+            LocalDateTime end = endOf(a, b, comps.get(i + 1), opts);
             // "추석 ~ 11월"처럼 끝이 시작보다 앞이면 구간이 아니라 별개 표현
             if (end.isBefore(a.date)) {
                 merged.add(a);
@@ -51,9 +52,9 @@ final class RangeMerger {
         return new Merged(merged, mergedGroups, mergedComps);
     }
 
-    private static LocalDateTime endOf(LocalResult a, LocalResult b, Components bc) {
+    private static LocalDateTime endOf(LocalResult a, LocalResult b, Components bc, ResolveOptions opts) {
         if (Grouping.isTimeOnly(bc)) {
-            return Grouping.alignEnd(a.date, bc);
+            return Grouping.alignEnd(a.date, bc, opts);
         }
         LocalDateTime end = b.end != null ? b.end : b.date;
         // "11월 1일부터 3일까지": 끝에 일만 있으면 시작의 연월을 이어받는다
@@ -62,15 +63,15 @@ final class RangeMerger {
         if (Grouping.isDayOnly(bc)) {
             YearMonth month = Calendars.yearMonth(a.date.getYear(), a.date.getMonthValue() - 1);
             LocalTime time = end.toLocalTime().withSecond(0).withNano(0);
-            end = Calendars.dayCountedFrom(month, bc.day).atTime(time);
+            end = opts.local(Calendars.dayCountedFrom(month, bc.day).atTime(time));
             if (end.isBefore(a.date)) {
-                end = Calendars.dayCountedFrom(month.plusMonths(1), bc.day).atTime(time);
+                end = opts.local(Calendars.dayCountedFrom(month.plusMonths(1), bc.day).atTime(time));
             }
         }
         // "월요일부터 금요일까지": 끝 요일이 시작보다 앞이면 다음 주.
         // 원본은 B의 Date를 그 자리에서 고치므로 합치지 못해도 B에 남는다. 같은 결과를 내려고 B에도 쓴다
         if (Grouping.isWeekdayOnly(bc) && end.isBefore(a.date)) {
-            end = end.plusDays(7);
+            end = opts.local(end.plusDays(7));
             if (b.end != null) {
                 b.end = end;
             } else {
@@ -78,7 +79,7 @@ final class RangeMerger {
             }
         }
         if (b.end == null && !b.hasTime) {
-            end = Calendars.constructed(end.toLocalDate().atTime(23, 59));
+            end = opts.local(Calendars.constructed(end.toLocalDate().atTime(23, 59)));
         }
         return end;
     }

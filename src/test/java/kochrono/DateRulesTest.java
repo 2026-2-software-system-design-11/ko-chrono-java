@@ -45,4 +45,11 @@ class DateRulesTest {
         assertEquals(at(2027, 9, 5, 1, 0), date("일요일", at(2027, 9, 4, 12, 0), "America/Santiago"));
         assertEquals(at(2027, 9, 5, 1, 0), date("이번주 일요일", at(2027, 9, 1, 12, 0), "America/Santiago"));
     }
+
+    @Test void 시_범위의_끝도_밀린_시작에_맞춘다() {
+        ParseResult r = KoChrono.parse("새벽 2시 30분부터 3시까지", ParseOptions.defaults()
+                .withReferenceDate(at(2027, 3, 14, 0, 10).atZone(ZoneId.of("America/Los_Angeles"))));
+        assertEquals(at(2027, 3, 14, 3, 30), r.date().toLocalDateTime());
+        assertEquals(at(2027, 3, 14, 15, 0), r.end().toLocalDateTime());
+    }
 }

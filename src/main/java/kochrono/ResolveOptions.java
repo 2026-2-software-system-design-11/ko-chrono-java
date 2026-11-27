@@ -1,5 +1,6 @@
 package kochrono;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -23,5 +24,14 @@ record ResolveOptions(LocalDateTime referenceDate, WeekStart weekStart, int defa
      */
     LocalDateTime local(LocalDateTime wall) {
         return localZone == null ? wall : ZonedDateTime.of(wall, localZone).toLocalDateTime();
+    }
+
+    /** x를 from에서 to까지의 실제 시간만큼 옮긴다. 원본은 Date의 getTime 차이를 더한다 */
+    LocalDateTime shift(LocalDateTime x, LocalDateTime from, LocalDateTime to) {
+        if (localZone == null) {
+            return x.plus(Duration.between(from, to));
+        }
+        Duration d = Duration.between(ZonedDateTime.of(from, localZone), ZonedDateTime.of(to, localZone));
+        return ZonedDateTime.of(x, localZone).plus(d).toLocalDateTime();
     }
 }

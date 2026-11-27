@@ -1,6 +1,5 @@
 package kochrono;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,11 +110,11 @@ final class RecurrenceBinder {
             if (until != null && until.isBefore(again.date)) {
                 return false;
             }
-            Duration shift = Duration.between(r.date, again.date);
+            LocalDateTime from = r.date;
             r.date = again.date;
             r.recur = again.recur.withUntil(until);
             if (r.end != null) {
-                r.end = r.end.plus(shift);
+                r.end = opts.shift(r.end, from, again.date);
             }
             return true;
         }
