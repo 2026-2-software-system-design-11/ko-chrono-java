@@ -33,6 +33,9 @@ final class Components {
     /** 오전, 오후 등이 명시됨 (15:30 같은 24시간 표기 포함). 시 범위의 끝을 맞출 때 쓴다 */
     boolean meridiem;
 
+    /** "자정", "24시", "밤 12시": 날짜가 있으면 그 날의 끝(다음날 00:00) */
+    boolean midnight;
+
     /** 시 단위 상대 이동 */
     Long hourOffset;
 

@@ -10,6 +10,9 @@ final class TimeParser {
     private static final String HOUR_WORD = "\\d{1,2}|한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|열한|열두";
     private static final String PERIOD = "오전|오후|새벽|아침|저녁|밤|낮";
 
+    // "24시 편의점", "24시 영업": 하루 종일 연다는 뜻이지 시각이 아니다
+    private static final Pattern OPEN_ALL_DAY = JsRegex.compile(
+            "^\\s*(?:편의점|영업|운영|무인|사우나|찜질방|약국|병원|동물병원|매장|카페|식당|해장국|김밥|헬스|콜센터|상담)");
     // "오후 3시", "3시 반", "오전 10시 30분", "새벽 2시", "저녁 7시", "낮 12시", "15시", "7시30", "3시 정각"
     private static final Pattern CLOCK = JsRegex.compile("(" + PERIOD + "|정오)?\\s*(" + HOUR_WORD
             + ")\\s*시(?!간)\\s*(?:(반)|(\\d{1,2})\\s*분|(\\d{2})(?![\\d가-힣])|정각)?");
@@ -55,6 +58,9 @@ final class TimeParser {
             if (raw == null || raw > 24) {
                 continue;
             }
+            if (raw == 24 && m.group(1) == null && OPEN_ALL_DAY.matcher(text.substring(m.end())).find()) {
+                continue;
+            }
             if (!taken.take(m.start(), m.end())) {
                 continue;
             }
@@ -69,6 +75,9 @@ final class TimeParser {
                 continue;
             }
             Components c = time(hour, minute, m.group(1) != null);
+            if (raw == 24 || ("밤".equals(m.group(1)) && raw == 12)) {
+                c.midnight = true;
+            }
             out.add(Fragment.of(m, c));
         }
     }

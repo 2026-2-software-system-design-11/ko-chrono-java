@@ -21,5 +21,7 @@ class TimeParserTest {
         assertEquals(List.of(0, 0), hm("밤 12시"));
         assertEquals(List.of(7, 30), hm("7시30"));
         assertFalse(one(TimeParser.parse("3시")).components().meridiem);
+        assertTrue(one(TimeParser.parse("24시")).components().midnight);
+        assertTrue(TimeParser.parse("24시 편의점").isEmpty());
     }
 }
