@@ -1,6 +1,7 @@
 package kochrono;
 
 import static kochrono.ParserFixtures.one;
+import static kochrono.ParserFixtures.texts;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,5 +31,20 @@ class WeekdayParserTest {
         assertTrue(c.weekend);
         assertNull(one(WeekdayParser.parse("주말에")).components().weekOffset);
         assertEquals(Components.WeekdayDir.PAST, one(WeekdayParser.parse("저번 수욜")).components().weekdayDir);
+    }
+
+    @Test void 업무용_한자어_주() {
+        assertEquals(Arrays.asList(1, 5), week("차주 금요일"));
+        assertEquals(Arrays.asList(0, null), week("금주 내로"));
+        assertTrue(WeekdayParser.parse("금주 결심").isEmpty());
+        assertTrue(WeekdayParser.parse("전주 여행").isEmpty());
+    }
+
+    @Test void N째_주와_요일_범위와_괄호() {
+        Components c = one(WeekdayParser.parse("11월 첫째 주 월요일")).components();
+        assertEquals(Arrays.asList(11, 1, 1), Arrays.asList(c.month, c.nthWeek, c.weekday));
+        assertEquals(-1, one(WeekdayParser.parse("마지막 주")).components().nthWeek);
+        assertEquals(List.of("월", "금"), texts(WeekdayParser.parse("월~금")));
+        assertEquals(List.of("(화)"), texts(WeekdayParser.parse("11/3(화)")));
     }
 }

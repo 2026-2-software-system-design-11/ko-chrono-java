@@ -25,9 +25,26 @@ final class WeekdayParser {
             "(?<![\\d가-힣])(" + DAY + ")\\s*~\\s*((" + DAY + ")(?:요일|욜)?)(?![가-힣])");
     // "11/3(화)", "11월 5일 (목)" 뒤에 붙는 요일 표시
     private static final Pattern PAREN = JsRegex.compile("\\((" + DAY + ")\\)");
+    // "11월 첫째 주 월요일", "둘째 주 수요일", "마지막 주 금요일", "12월 셋째 주"
+    // 요일 글자만 쓸 때("첫째 주 월")는 DAY_ALONE을 따른다 ("둘째 주 일정"의 "일"은 요일이 아니다)
+    private static final Pattern NTH = JsRegex.compile("(?:(\\d{1,2})\\s*월\\s*)?(첫째|첫|둘째|셋째|넷째|다섯째|마지막)\\s*주(?:\\s*("
+            + DAY + ")(?:요일|욜|" + DAY_ALONE + "))?");
+    private static final Map<String, Integer> NTH_NUM = Map.of("첫째", 1, "첫", 1, "둘째", 2, "셋째", 3, "넷째", 4,
+            "다섯째", 5, "마지막", -1);
     // "2주 뒤 월요일", "3주 후 금요일"은 N주 뒤의 그 주의 X요일 ("다다음주 월요일"과 같은 계산)
     private static final Pattern WEEKS_LATER = JsRegex.compile(
             "(\\d{1,2}|한|두|세|네|다섯)\\s*주\\s*(?:뒤|후)\\s*(" + DAY + ")(?:요일|욜)");
+    // 업무용 한자어 주 (규칙 33): "차주 금요일", "금주 월요일", "전주 수요일". 금주(술 끊기), 전주(도시), 차주(차 주인)와
+    // 겹치므로 요일은 "요일, 욜"까지 붙어야 하고, 요일 없이 쓸 때는 뒤에 날짜 말(내로, 중으로, 에, 까지 등)이 와야 한다.
+    // "전주"는 도시 이름과 너무 자주 겹쳐서 요일이 붙을 때만
+    private static final Map<String, Integer> FORMAL_WEEK = Map.of("전전", -2, "전", -1, "금", 0, "차", 1, "익", 1,
+            "차차", 2);
+    private static final Pattern FORMAL_WITH_DAY = JsRegex.compile(
+            "(?<![가-힣])(전전|차차|전|금|차|익)주\\s*(" + DAY + ")(?:요일|욜)");
+    // "차주 중으로", "차주 중", "금주 내로", "차주에 회의", "익주까지". "금주에"는 "금주에 성공했어"와 겹쳐서 제외
+    private static final Pattern FORMAL_WEEK_ONLY = JsRegex.compile(
+            "(?<![가-힣])(?:(전전|차차|차|익)주(?=\\s*(?:에(?!게|서)|에는|중으로|중에|중(?![가-힣])|내로|내|안에|안으로|까지|초|말|부터))"
+                    + "|(금)주(?=\\s*(?:중으로|중에|중(?![가-힣])|내로|내|안에|안으로|까지|초|말|부터)))");
     // "지난 금요일"은 오늘 제외 가장 가까운 과거, "다음 금요일"은 오늘 제외 가장 가까운 미래
     private static final Pattern DIR = JsRegex.compile("(지난|저번|다음)\\s*(" + DAY + ")(?:요일|욜)");
     // "주말에 보자" ("이번 주말"은 위 WEEKEND가 먼저 잡는다)
@@ -47,11 +64,34 @@ final class WeekdayParser {
     static List<Fragment> parse(String text) {
         List<Fragment> out = new ArrayList<>();
         Taken taken = new Taken();
+        for (Matcher m = FORMAL_WITH_DAY.matcher(text); m.find(); ) {
+            add(out, taken, m, weekday(FORMAL_WEEK.get(m.group(1)), WEEKDAY.get(m.group(2))));
+        }
+        for (Matcher m = FORMAL_WEEK_ONLY.matcher(text); m.find(); ) {
+            if (!taken.overlaps(m.start(), m.end())) {
+                add(out, taken, m, weekday(FORMAL_WEEK.get(m.group(1) != null ? m.group(1) : m.group(2)), null));
+            }
+        }
         for (Matcher m = WEEKS_LATER.matcher(text); m.find(); ) {
             Long n = KoreanNumber.parse(m.group(1));
             if (n != null) {
                 add(out, taken, m, weekday(n.intValue(), WEEKDAY.get(m.group(2))));
             }
+        }
+        for (Matcher m = NTH.matcher(text); m.find(); ) {
+            Components c = new Components();
+            c.nthWeek = NTH_NUM.get(m.group(2));
+            if (m.group(1) != null) {
+                int month = Integer.parseInt(m.group(1));
+                if (month < 1 || month > 12) {
+                    continue;
+                }
+                c.month = month;
+            }
+            if (m.group(3) != null) {
+                c.weekday = WEEKDAY.get(m.group(3));
+            }
+            add(out, taken, m, c);
         }
         for (Matcher m = RANGE.matcher(text); m.find(); ) {
             out.add(new Fragment(m.group(1), m.start(), weekday(null, WEEKDAY.get(m.group(1)))));

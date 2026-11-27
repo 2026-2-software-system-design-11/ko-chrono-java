@@ -65,6 +65,9 @@ final class Components {
     Long durationMonths;
     Long durationMinutes;
 
+    /** "N째 주": 1~5, 마지막은 -1 */
+    Integer nthWeek;
+
     /** 이 조각이 "~까지" 종료점인지 */
     boolean isEnd;
 
