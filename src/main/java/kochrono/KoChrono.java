@@ -32,7 +32,7 @@ public final class KoChrono {
         LocalDateTime wallRef = o.timezone() != null ? WallClock.toWall(ref, zone) : ref.toLocalDateTime();
         ResolveOptions opts = new ResolveOptions(wallRef,
                 o.weekStart() != null ? o.weekStart() : WeekStart.MONDAY,
-                o.defaultHour() != null ? o.defaultHour() : 0);
+                o.defaultHour() != null ? o.defaultHour() : 0, o.timezone() != null ? null : zone);
         // 그 시간대의 벽시계로 계산하고, 결과를 실제 시점으로 되돌린다
         Function<LocalDateTime, ZonedDateTime> at = o.timezone() != null
                 ? wall -> WallClock.fromWall(wall, zone) : wall -> WallClock.local(wall, zone);

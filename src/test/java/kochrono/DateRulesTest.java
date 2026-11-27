@@ -30,4 +30,10 @@ class DateRulesTest {
                 .withTimezone("UTC");
         assertEquals(at(1951, 3, 1, 0, 0), KoChrono.parse("3월 1일", o).date().toLocalDateTime());
     }
+
+    @Test void 서머타임으로_없는_시각은_그_자리에서_밀린_값으로_지났는지_본다() {
+        // 로스앤젤레스 2027-03-14 02:00에 서머타임이 시작된다. 02:30은 03:30이 되고, 기준 03:00보다 뒤라 오늘이다
+        assertEquals(at(2027, 3, 14, 3, 30), date("새벽 2시 30분", at(2027, 3, 14, 3, 0), "America/Los_Angeles"));
+        assertEquals(at(2027, 3, 14, 3, 30), date("내일 새벽 2시 30분", at(2027, 3, 13, 12, 0), "America/Los_Angeles"));
+    }
 }
