@@ -25,6 +25,15 @@ final class Resolver {
     private static LocalResult resolveDate(List<Fragment> group, ResolveOptions opts) {
         Components c = Grouping.merge(group);
         LocalDateTime ref = opts.referenceDate();
+        // "내일 이 시간"은 기준 시각의 시와 분. "다음 주 이 시간"은 7일 뒤 (그 주 월요일이 아니라)
+        if (c.sameTime && c.hour == null) {
+            c.hour = ref.getHour();
+            c.minute = ref.getMinute();
+            c.meridiem = true;
+            if (c.weekOffset != null && c.weekday == null) {
+                c.sameDay = true;
+            }
+        }
         DateState s = new DateState(ref.withSecond(0).withNano(0));
         boolean hasTime = c.hour != null || c.hourOffset != null || c.minuteOffset != null;
         if (!resolveDay(c, opts, s)) {
@@ -55,6 +64,15 @@ final class Resolver {
 
     /** 날짜 부분. 없는 날짜면 false */
     private static boolean resolveDay(Components c, ResolveOptions opts, DateState s) {
+        LocalDateTime ref = opts.referenceDate();
+        // 일 단위 상대 이동
+        if (c.dayOffset != null) {
+            if (!s.dateSet) {
+                s.d = ref.toLocalDate().atStartOfDay();
+            }
+            s.d = s.d.plusDays(c.dayOffset);
+            s.dateSet = true;
+        }
         return true;
     }
 
@@ -66,6 +84,27 @@ final class Resolver {
             // 시간만 있고 날짜가 없으면 오늘, 이미 지났으면 내일
             LocalDateTime d = Calendars.atClock(ref.toLocalDate(), clockHour(c), minute);
             return d.isBefore(ref) ? d.plusDays(1) : d;
+        }
+        if (c.hour != null) {
+            LocalDateTime d = Calendars.atClock(s.d.toLocalDate(), clockHour(c), minute);
+            // "내일 자정"은 내일이 끝나는 시점
+            if (c.midnight) {
+                d = d.plusDays(1);
+            }
+            return d;
+        }
+        if (c.hourOffset != null || c.minuteOffset != null) {
+            LocalDateTime d = ref.withSecond(0).withNano(0);
+            if (c.hourOffset != null && c.hourOffset != 0) {
+                d = d.plusHours(c.hourOffset);
+            }
+            if (c.minuteOffset != null && c.minuteOffset != 0) {
+                d = d.plusMinutes(c.minuteOffset);
+            }
+            return d;
+        }
+        if (s.dateSet) {
+            return Calendars.atClock(s.d.toLocalDate(), opts.defaultHour(), 0);
         }
         return null;
     }
