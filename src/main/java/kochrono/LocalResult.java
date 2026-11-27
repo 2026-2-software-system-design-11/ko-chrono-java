@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 벽시계 시각으로 계산한 결과.
+ * 벽시계 시각으로 계산한 결과. KoChrono가 마지막에 시간대를 붙여 {@link ParseResult}로 바꾼다.
  */
 final class LocalResult {
     LocalDateTime date;
