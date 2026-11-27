@@ -61,6 +61,18 @@ public final class KoChrono {
         return parseDate(text, null);
     }
 
+    /**
+     * 할 일이나 일정 한 줄을 제목과 시점으로 나눈다. 날짜로 인식된 부분과 거기 붙은 조사를 뺀 나머지가 제목이다.
+     * "다음주 금요일까지 보고서 제출"은 제목 "보고서 제출", 마감 금요일 23:59.
+     */
+    public static ParsedEvent parseEvent(String text, ParseOptions options) {
+        return EventTitle.toEvent(text, parseAll(text, options));
+    }
+
+    public static ParsedEvent parseEvent(String text) {
+        return parseEvent(text, null);
+    }
+
     private static ParseResult toResult(LocalResult r, Function<LocalDateTime, ZonedDateTime> at) {
         Recurrence recurrence = null;
         if (r.recur != null) {
