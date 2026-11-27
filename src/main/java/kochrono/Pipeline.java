@@ -66,7 +66,7 @@ final class Pipeline {
             resultGroups.add(g);
         }
         RangeMerger.Merged merged = RangeMerger.merge(text, results, resultGroups, comps);
-        return merged.results();
+        return RecurrenceBinder.bind(text, merged.results(), merged.groups(), merged.comps(), opts);
     }
 
     /** 모든 파서의 조각을 모으고 겹치는 조각은 더 긴 것만 남긴다 */
