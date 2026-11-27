@@ -12,6 +12,8 @@ final class LocalResult {
     String text = "";
     int index;
     boolean hasTime;
+    RecurSpec recur;
+    String rrule;
     Ambiguity.Reason ambiguity;
     List<LocalDateTime> alternatives = List.of();
     boolean past;
@@ -22,6 +24,7 @@ final class LocalResult {
     /** 담은 시각이 모두 원본의 Date로 나타낼 수 있는 범위인지 */
     boolean valid() {
         boolean ok = Calendars.representable(date) && (end == null || Calendars.representable(end));
+        ok &= recur == null || recur.until() == null || Calendars.representable(recur.until());
         ok &= alternatives.stream().allMatch(Calendars::representable);
         return ok;
     }

@@ -39,6 +39,9 @@ final class Resolver {
                 c.sameDay = true;
             }
         }
+        if (c.recur != null) {
+            return RecurrenceResolver.resolve(group, c, opts);
+        }
         DateState s = new DateState(ref.withSecond(0).withNano(0));
         boolean hasTime = c.hour != null || c.hourOffset != null || c.minuteOffset != null;
         if (!resolveDay(c, opts, s)) {
