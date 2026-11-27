@@ -20,6 +20,15 @@ final class AbsoluteDateParser {
     private static final Pattern HANGUL = JsRegex.compile(
             "(?<![가-힣])(유|시|[일이삼사오육칠팔구십]{1,2})월\\s*([일이삼사오육칠팔구십]{1,3})일(?!요일)");
     private static final Map<String, Long> HANGUL_MONTH = Map.of("유", 6L, "시", 10L);
+    // "2027년" 단독 (월이 뒤따르지 않을 때). "26년"은 "26년 동안" 오탐이 있어 4자리만
+    private static final Pattern YEAR_ONLY = JsRegex.compile("(?<!\\d)((?:19|20)\\d{2})\\s*년(?!\\s*\\d{1,2}\\s*월)");
+    // "11월" 단독
+    private static final Pattern MONTH_ONLY = JsRegex.compile("(?<![\\d가-힣])(\\d{1,2})\\s*월(?!\\s*\\d{1,2}\\s*일|생|세)");
+    // "5일" 단독. "5일간", "3일 동안", "3박 4일"은 기간이고 "주 5일 근무"(횟수), "30일 챌린지"도 날짜가 아니다.
+    // 원본의 앞쪽 조건 중 길이가 정해지지 않은 두 가지("N박 " 뒤, "주 " 뒤)는 Java 정규식에 쓸 수 없어
+    // afterNightsOrWeek에서 따로 본다
+    private static final Pattern DAY_ONLY = JsRegex.compile(
+            "(?<!\\d)(\\d{1,2})\\s*일(?!요일|간|장|째|차|분|\\s*동안|\\s*연속|\\s*챌린지)");
 
     private AbsoluteDateParser() {
     }
@@ -81,6 +90,43 @@ final class AbsoluteDateParser {
                 out.add(Fragment.of(m, date(null, month, day)));
             }
         }
+        for (Matcher m = YEAR_ONLY.matcher(text); m.find(); ) {
+            if (taken.take(m.start(), m.end())) {
+                Components c = new Components();
+                c.year = Integer.parseInt(m.group(1));
+                out.add(Fragment.of(m, c));
+            }
+        }
+        for (Matcher m = MONTH_ONLY.matcher(text); m.find(); ) {
+            if (!taken.take(m.start(), m.end())) {
+                continue;
+            }
+            int month = Integer.parseInt(m.group(1));
+            if (month >= 1 && month <= 12) {
+                Components c = new Components();
+                c.month = month;
+                out.add(Fragment.of(m, c));
+            }
+        }
+        Matcher m = DAY_ONLY.matcher(text);
+        int from = 0;
+        while (m.find(from)) {
+            if (afterNightsOrWeek(text, m.start())) {
+                // 정규식 엔진처럼 다음 글자부터 다시 찾는다
+                from = m.start() + 1;
+                continue;
+            }
+            from = m.end();
+            if (!taken.take(m.start(), m.end())) {
+                continue;
+            }
+            int day = Integer.parseInt(m.group(1));
+            if (day >= 1 && day <= 31) {
+                Components c = new Components();
+                c.day = day;
+                out.add(Fragment.of(m, c));
+            }
+        }
         return out;
     }
 
@@ -90,5 +136,36 @@ final class AbsoluteDateParser {
         c.month = month;
         c.day = day;
         return c;
+    }
+
+    /**
+     * 원본의 {@code (?<!\d\s*박\s*)(?<!(?<![가-힣])주\s*)}. i 바로 앞이 "숫자 + 공백 + 박 + 공백"이거나
+     * "(한글이 아닌 글자 뒤의) 주 + 공백"이면 참. 공백은 이어져 있으므로 뒤에서부터 공백을 모두 건너뛰고 보면 같은 뜻이다.
+     */
+    static boolean afterNightsOrWeek(String text, int i) {
+        int j = skipSpacesBack(text, i);
+        if (j == 0) {
+            return false;
+        }
+        char before = text.charAt(j - 1);
+        if (before == '박') {
+            int k = skipSpacesBack(text, j - 1);
+            return k > 0 && text.charAt(k - 1) >= '0' && text.charAt(k - 1) <= '9';
+        }
+        if (before == '주') {
+            return j - 1 == 0 || !isHangul(text.charAt(j - 2));
+        }
+        return false;
+    }
+
+    private static int skipSpacesBack(String text, int i) {
+        while (i > 0 && JsRegex.isSpace(text.charAt(i - 1))) {
+            i--;
+        }
+        return i;
+    }
+
+    private static boolean isHangul(char c) {
+        return c >= '가' && c <= '힣';
     }
 }
