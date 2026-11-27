@@ -30,6 +30,21 @@ final class RecurrenceParser {
     private static final Pattern DAYS_EVERY = JsRegex.compile(
             "(?<![가-힣])([월화수목금토일](?:요일|욜)(?:\\s*(?:,|\\u00B7|이랑|랑|하고|과|와)?\\s*[월화수목금토일](?:요일|욜))*)\\s*마다");
 
+    private static final Map<String, Integer> NTH = Map.of("첫째", 1, "첫", 1, "둘째", 2, "셋째", 3, "넷째", 4, "마지막", -1);
+    // "매달", "매월", "달마다", "한 달마다", "2개월마다", "두 달에 한 번"
+    private static final String MONTH_EVERY = "매달|매월|매\\s*달|다달이|(?<![가-힣])달\\s*마다"
+            + "|(\\d{1,2}|한|두|세|네|다섯|여섯)\\s*(?:개월|달)\\s*(?:마다|에\\s*한\\s*번)";
+    // "매년", "해마다", "2년마다"
+    private static final String YEAR_EVERY = "매년|매해|해마다|(\\d{1,2}|한|두|세)\\s*년\\s*마다";
+    // "매달 첫째 주 월요일", "매월 마지막 주 금요일"
+    private static final Pattern MONTHLY_NTH = JsRegex.compile(
+            "(?:매달|매월|매\\s*달)\\s*(첫째|첫|둘째|셋째|넷째|마지막)\\s*주\\s*([월화수목금토일])(?:요일|욜)");
+    // "매달 15일", "매월 말일", "매달 말", "매달 초", "2개월마다 1일", "달마다 14일"
+    private static final Pattern MONTHLY_DAY = JsRegex.compile(
+            "(?:" + MONTH_EVERY + ")\\s*(?:(\\d{1,2})\\s*일|(말일|마지막\\s*날|말)|(초))");
+    // "매년 3월 1일", "해마다 12월 25일", "2년마다 3월 1일"
+    private static final Pattern YEARLY = JsRegex.compile("(?:" + YEAR_EVERY + ")\\s*(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일");
+
     private static final Pattern DAY_NAMES = Pattern.compile("요일|욜");
     private static final Pattern DAY_ITEMS = JsRegex.compile("([월화수목금토일])\\s*~\\s*([월화수목금토일])|([월화수목금토일])");
 
@@ -71,6 +86,25 @@ final class RecurrenceParser {
     static List<Fragment> parse(String text) {
         List<Fragment> out = new ArrayList<>();
         Taken taken = new Taken();
+        for (Matcher m = MONTHLY_NTH.matcher(text); m.find(); ) {
+            push(out, taken, m, RecurSpec.of(Frequency.MONTHLY, 1)
+                    .withWeekdays(List.of(WeekdayParser.WEEKDAY.get(m.group(2)))).withNth(NTH.get(m.group(1))));
+        }
+        for (Matcher m = MONTHLY_DAY.matcher(text); m.find(); ) {
+            Integer n = intervalOf(m.group(), m.group(1));
+            int day = m.group(2) != null ? Integer.parseInt(m.group(2)) : m.group(3) != null ? -1 : 1;
+            if (n != null && day != 0 && day <= 31) {
+                push(out, taken, m, RecurSpec.of(Frequency.MONTHLY, n).withMonthDay(day));
+            }
+        }
+        for (Matcher m = YEARLY.matcher(text); m.find(); ) {
+            Integer n = intervalOf(m.group(), m.group(1));
+            int month = Integer.parseInt(m.group(2));
+            int day = Integer.parseInt(m.group(3));
+            if (n != null && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                push(out, taken, m, RecurSpec.of(Frequency.YEARLY, n).withMonth(month).withMonthDay(day));
+            }
+        }
         for (Matcher m = WEEKDAY_SET.matcher(text); m.find(); ) {
             String set = m.group(1) != null ? m.group(1) : m.group(2);
             push(out, taken, m, RecurSpec.of(Frequency.WEEKLY, 1).withWeekdays(SETS.get(set)));
