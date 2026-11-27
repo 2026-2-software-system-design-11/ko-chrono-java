@@ -1,5 +1,6 @@
 package kochrono;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -56,6 +57,39 @@ final class Grouping {
 
     private static boolean hasRelative(Components c) {
         return c.hourOffset != null || c.minuteOffset != null;
+    }
+
+    /** 날짜 정보 없이 시각만 있는 조각인지 ("5시까지", "17:00") */
+    static boolean isTimeOnly(Components c) {
+        return c.hour != null && c.recur == null && !hasRelative(c) && !hasDate(c);
+    }
+
+    /** 날짜 정보가 요일뿐인 조각인지 ("금요일까지") */
+    static boolean isWeekdayOnly(Components c) {
+        return c.weekday != null && c.day == null && !hasDateBesidesDayAndWeekday(c);
+    }
+
+    /** 날짜 정보가 "N일"뿐인 조각인지 ("3일까지") */
+    static boolean isDayOnly(Components c) {
+        return c.day != null && c.weekday == null && !hasDateBesidesDayAndWeekday(c);
+    }
+
+    /**
+     * 시 범위의 끝을 시작에 맞춘다 (규칙 16).
+     * 끝을 시작과 같은 날에 놓고, 시작보다 이르면 오전, 오후를 이어받거나(+12시간) 다음날로 넘긴다.
+     * "오후 3~5시"는 17시, "오후 11시부터 1시까지"는 다음날 1시, "오후 3시부터 오전 1시까지"는 다음날 1시
+     */
+    static LocalDateTime alignEnd(LocalDateTime start, Components end) {
+        int hour = end.hour;
+        LocalDateTime r = Calendars.atClock(start.toLocalDate(), hour, end.minute != null ? end.minute : 0);
+        if (!r.isAfter(start)) {
+            if (!end.meridiem && hour < 12 && hour + 12 > start.getHour()) {
+                r = Calendars.atClock(r.toLocalDate(), hour + 12, r.getMinute());
+            } else {
+                r = r.plusDays(1);
+            }
+        }
+        return r;
     }
 
     private static boolean hasDayKey(Components c) {

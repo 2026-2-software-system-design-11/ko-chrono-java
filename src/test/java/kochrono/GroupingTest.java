@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,5 +31,19 @@ class GroupingTest {
         weekday.weekday = 4;
         assertFalse(Grouping.hasConflict(day, weekday));
         assertTrue(Grouping.hasConflict(day, day));
+    }
+
+    @Test void 시만_있는지_요일만_있는지_일만_있는지() {
+        Components c = Components.merge(List.of(TimeParser.parse("5시").get(0).components()));
+        assertTrue(Grouping.isTimeOnly(c));
+        assertTrue(Grouping.isDayOnly(AbsoluteDateParser.parse("3일").get(0).components()));
+        assertTrue(Grouping.isWeekdayOnly(WeekdayParser.parse("금요일").get(0).components()));
+    }
+
+    @Test void 시_범위의_끝() {
+        LocalDateTime start = LocalDateTime.of(2026, 10, 30, 15, 0);
+        assertEquals(LocalDateTime.of(2026, 10, 30, 17, 0), Grouping.alignEnd(start, TimeParser.parse("5시").get(0).components()));
+        LocalDateTime late = LocalDateTime.of(2026, 10, 30, 23, 0);
+        assertEquals(LocalDateTime.of(2026, 10, 31, 1, 0), Grouping.alignEnd(late, TimeParser.parse("1시").get(0).components()));
     }
 }
