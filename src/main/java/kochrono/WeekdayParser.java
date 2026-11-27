@@ -18,6 +18,10 @@ final class WeekdayParser {
     private static final String DAY_ALONE = "(?=\\s*$|\\s*[,.!?~～)]|\\s*(?:\\d|오전|오후|새벽|아침|점심|낮(?!잠)|저녁|밤(?!새)|(?:"
             + DAY + ")(?![가-힣]))|(?:에|엔|은|는|도|나|이나|쯤)(?![가-힣])|에는|까지|부터)";
 
+    // "이번 주말", "다음주말", "지난 주말"은 그 주의 토요일
+    private static final Pattern WEEKEND = JsRegex.compile("(" + WEEK_WORD + ")\\s*주말");
+    // "주말에 보자" ("이번 주말"은 위 WEEKEND가 먼저 잡는다)
+    private static final Pattern BARE_WEEKEND = JsRegex.compile("(?<![가-힣])주말(?=[\\s,에엔은는도까부]|$)");
     // "다음주 화요일", "이번 주 금", "다다음주 월요일", "담주 월욜", "담주 월 2시"
     private static final Pattern WITH_WEEK = JsRegex.compile(
             "(" + WEEK_WORD + ")\\s*주\\s*(" + DAY + ")(?:요일|욜|" + DAY_ALONE + ")");
@@ -33,6 +37,18 @@ final class WeekdayParser {
     static List<Fragment> parse(String text) {
         List<Fragment> out = new ArrayList<>();
         Taken taken = new Taken();
+        for (Matcher m = WEEKEND.matcher(text); m.find(); ) {
+            Components c = weekday(WEEK_WORDS.get(m.group(1)), 6);
+            c.weekend = true;
+            add(out, taken, m, c);
+        }
+        for (Matcher m = BARE_WEEKEND.matcher(text); m.find(); ) {
+            if (!taken.overlaps(m.start(), m.end())) {
+                Components c = weekday(null, 6);
+                c.weekend = true;
+                add(out, taken, m, c);
+            }
+        }
         for (Matcher m = WITH_WEEK.matcher(text); m.find(); ) {
             if (!taken.overlaps(m.start(), m.end())) {
                 add(out, taken, m, weekday(WEEK_WORDS.get(m.group(1)), WEEKDAY.get(m.group(2))));
