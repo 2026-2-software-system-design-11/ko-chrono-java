@@ -18,6 +18,12 @@ final class Components {
     /** 기준일로부터 일 단위 이동 (내일 = +1) */
     Long dayOffset;
 
+    /** 기준 주로부터 주 단위 이동 (다음주 = +1) */
+    Integer weekOffset;
+
+    /** 0=일 ... 6=토 (원본의 요일 번호 규약) */
+    Integer weekday;
+
     /** "1년 뒤", "내년 이맘때": 연, 월, 주 이동 때 기준일의 날짜를 유지 */
     boolean sameDay;
 
