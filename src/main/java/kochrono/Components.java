@@ -27,6 +27,9 @@ final class Components {
     /** "주말" 단독: 오늘이 토, 일이면 오늘, 아니면 다가오는 토요일 */
     boolean weekend;
 
+    /** "지난 금요일"(오늘 제외 과거)과 "다음 금요일"(오늘 제외 미래) */
+    WeekdayDir weekdayDir;
+
     /** "1년 뒤", "내년 이맘때": 연, 월, 주 이동 때 기준일의 날짜를 유지 */
     boolean sameDay;
 
@@ -64,6 +67,8 @@ final class Components {
 
     /** 이 조각이 "~까지" 종료점인지 */
     boolean isEnd;
+
+    enum WeekdayDir { PAST, NEXT }
 
     enum MonthPart { START, MIDDLE, END }
 
