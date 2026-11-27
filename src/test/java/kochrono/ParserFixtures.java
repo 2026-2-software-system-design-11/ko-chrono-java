@@ -14,4 +14,9 @@ final class ParserFixtures {
         assertEquals(1, fragments.size(), fragments::toString);
         return fragments.get(0);
     }
+
+    /** 조각들의 글자 */
+    static List<String> texts(List<Fragment> fragments) {
+        return fragments.stream().map(Fragment::text).toList();
+    }
 }
