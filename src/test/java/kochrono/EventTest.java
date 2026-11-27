@@ -26,4 +26,10 @@ class EventTest {
         assertEquals("치과 예약", e.title());
         assertEquals(d(2026, 10, 31, 15), e.date());
     }
+
+    @Test @DisplayName("내일 오후 3시에 강남역에서 친구 만나기") void c5() {
+        assertEquals("강남역에서 친구 만나기", ev("내일 오후 3시에 강남역에서 친구 만나기").title());
+    }
+
+    @Test @DisplayName("모레까지는 꼭 끝내기") void c6() { assertEquals("꼭 끝내기", ev("모레까지는 꼭 끝내기").title()); }
 }

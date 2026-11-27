@@ -3,10 +3,14 @@ package kochrono;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** parseEvent의 제목 분리: 날짜 부분을 뺀다 (규칙 28) */
+/** parseEvent의 제목 분리: 날짜 부분과 거기 붙은 조사를 뺀다 (규칙 28) */
 final class EventTitle {
+    // 날짜 바로 뒤에 붙은 조사: "3시에", "모레까지는", "주말엔"
+    private static final Pattern TRAILING_PARTICLE = JsRegex.compile(
+            "^(?:에는|에도|에|엔|은|는|도|까지는|까지|부터|쯤|께|경)(?=[\\s,.!?]|$)");
     private static final Pattern SPACES = JsRegex.compile("\\s+");
     private static final Pattern SPACE_BEFORE_MARK = JsRegex.compile("\\s+([,.!?])");
     private static final Pattern EDGES = JsRegex.compile("^[\\s,]+|[\\s,]+$");
@@ -22,7 +26,9 @@ final class EventTitle {
         sorted.sort(Comparator.comparingInt(ParseResult::index).reversed());
         for (ParseResult r : sorted) {
             String after = Texts.slice(rest, r.index() + r.text().length());
-            rest = Texts.slice(rest, 0, r.index()) + " " + after;
+            Matcher particle = TRAILING_PARTICLE.matcher(after);
+            int skip = particle.find() ? particle.group().length() : 0;
+            rest = Texts.slice(rest, 0, r.index()) + " " + after.substring(skip);
         }
         String title = SPACES.matcher(rest).replaceAll(" ");
         title = SPACE_BEFORE_MARK.matcher(title).replaceAll("$1");
