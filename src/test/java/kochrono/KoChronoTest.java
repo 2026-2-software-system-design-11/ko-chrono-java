@@ -34,4 +34,8 @@ class KoChronoTest {
         assertEquals(2, KoChrono.parseAll("내일 아니면 모레").size());
         assertNull(KoChrono.parseDate("안녕하세요"));
     }
+
+    @Test void 과거형_문장() {
+        assertEquals(Tense.PAST, KoChrono.parse("3시에 회의했어", OPTS).tense());
+    }
 }
