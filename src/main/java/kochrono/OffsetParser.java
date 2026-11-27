@@ -12,6 +12,10 @@ final class OffsetParser {
     private static final Pattern RE = JsRegex.compile(
             "(?:(\\d+|[일이삼사오육칠팔구십한두세네다섯여섯일곱여덟아홉열]+)\\s*(일|주|주일|달|개월|년|시간|분)"
                     + "|(보름|열흘|이틀|사흘|나흘|닷새|엿새|이레|여드레|아흐레))\\s*(?:쯤|정도)?\\s*(뒤|후|전|이내|안에|안으로|내로|이후)");
+    // "한 시간 반 뒤", "1시간 30분 후", "2시간반 전"
+    private static final Pattern HOUR_MIN = JsRegex.compile(
+            "(\\d+|[일이삼사오육칠팔구십한두세네다섯여섯일곱여덟아홉열]+)\\s*시간\\s*(?:(반)|(\\d+)\\s*분)\\s*(?:쯤|정도)?"
+                    + "\\s*(뒤|후|전|이내|안에|이후)");
     private static final Set<String> WITHIN = Set.of("이내", "안에", "안으로", "내로");
 
     private OffsetParser() {
@@ -19,7 +23,26 @@ final class OffsetParser {
 
     static List<Fragment> parse(String text) {
         List<Fragment> out = new ArrayList<>();
+        Taken taken = new Taken();
+        for (Matcher m = HOUR_MIN.matcher(text); m.find(); ) {
+            Long h = KoreanNumber.parse(m.group(1));
+            if (h == null) {
+                continue;
+            }
+            long sign = m.group(4).equals("전") ? -1 : 1;
+            Components c = new Components();
+            c.hourOffset = sign * h;
+            c.minuteOffset = sign * (m.group(2) != null ? 30 : KoreanNumber.digits(m.group(3)));
+            if (m.group(4).equals("이내") || m.group(4).equals("안에")) {
+                c.isEnd = true;
+            }
+            out.add(Fragment.of(m, c));
+            taken.add(m.start(), m.end());
+        }
         for (Matcher m = RE.matcher(text); m.find(); ) {
+            if (taken.overlaps(m.start(), m.end())) {
+                continue;
+            }
             Long n = KoreanNumber.parse(m.group(3) != null ? m.group(3) : m.group(1));
             if (n == null) {
                 continue;

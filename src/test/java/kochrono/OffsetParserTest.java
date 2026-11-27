@@ -24,4 +24,13 @@ class OffsetParserTest {
         assertTrue(c.isEnd);
         assertEquals(30L, one(OffsetParser.parse("30분쯤 뒤")).components().minuteOffset);
     }
+
+    @Test void 시간과_분을_함께() {
+        Components c = one(OffsetParser.parse("한 시간 반 뒤")).components();
+        assertEquals(1L, c.hourOffset);
+        assertEquals(30L, c.minuteOffset);
+        Components before = one(OffsetParser.parse("2시간 10분 전")).components();
+        assertEquals(-2L, before.hourOffset);
+        assertEquals(-10L, before.minuteOffset);
+    }
 }
