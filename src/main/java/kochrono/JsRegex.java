@@ -10,10 +10,12 @@ import java.util.regex.Pattern;
  *       JavaScript가 잡는 글자를 모두 적은 글자 묶음으로 바꾼다. UNICODE_CHARACTER_CLASS는 {@code \d}까지 넓혀 쓰지 않는다.</li>
  *   <li>JavaScript의 {@code $}는 입력의 끝에서만 맞는다. Java의 {@code $}는 마지막 줄바꿈 앞에서도 맞으므로 {@code \z}로 바꾼다.</li>
  * </ul>
+ * 문자열 끝 공백 자르기도 JavaScript의 trim과 같은 글자를 자른다.
  */
 final class JsRegex {
     /** JavaScript {@code \s}가 잡는 글자. 글자 묶음 안에 그대로 넣을 수 있는 형태 */
     static final String SPACE = "\\t\\n\\u000B\\f\\r \\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF";
+    private static final Pattern SPACES = Pattern.compile("[" + SPACE + "]+");
 
     private JsRegex() {
     }
@@ -54,5 +56,42 @@ final class JsRegex {
             }
         }
         return out.toString();
+    }
+
+    /** JavaScript {@code \s}에 드는 글자인지 */
+    static boolean isSpace(char c) {
+        return switch (c) {
+            case '\t', '\n', '\u000B', '\f', '\r', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+                 '　', '﻿' -> true;
+            default -> c >= ' ' && c <= ' ';
+        };
+    }
+
+    /** {@code s.trim()} */
+    static String trim(String s) {
+        return trimEnd(trimStart(s));
+    }
+
+    /** {@code s.trimStart()} */
+    static String trimStart(String s) {
+        int i = 0;
+        while (i < s.length() && isSpace(s.charAt(i))) {
+            i++;
+        }
+        return s.substring(i);
+    }
+
+    /** {@code s.trimEnd()} */
+    static String trimEnd(String s) {
+        int i = s.length();
+        while (i > 0 && isSpace(s.charAt(i - 1))) {
+            i--;
+        }
+        return s.substring(0, i);
+    }
+
+    /** {@code s.replace(/\s/g, '')} */
+    static String removeSpaces(String s) {
+        return SPACES.matcher(s).replaceAll("");
     }
 }
