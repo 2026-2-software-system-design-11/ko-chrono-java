@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -94,6 +95,23 @@ class IcsTest {
     @Test @DisplayName("매주 수요일 오후 2시, 총 8회 (COUNT는 그대로)") void c8() {
         assertTrue(event(KoChrono.toICS(p("매주 수요일 오후 2시, 총 8회"), FIXED.withTitle("영어 회화"))).containsAll(List.of(
                 "SUMMARY:영어 회화", "RRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=8")));
+    }
+
+    @Test @DisplayName("제목의 쉼표, 세미콜론, 역슬래시, 줄바꿈은 이스케이프") void c9() {
+        assertTrue(event(KoChrono.toICS(p("내일 3시"), FIXED.withTitle("A, B; C\\D\nE")))
+                .contains("SUMMARY:A\\, B\\; C\\\\D\\nE"));
+    }
+
+    @Test @DisplayName("75바이트가 넘는 줄은 접는다 (한글 글자 중간에서 끊지 않음)") void c10() {
+        List<String> ls = event(KoChrono.toICS(p("내일 3시"), FIXED.withTitle("가".repeat(40))));
+        int i = 0;
+        while (!ls.get(i).startsWith("SUMMARY:")) {
+            i++;
+        }
+        assertTrue(ls.get(i).getBytes(StandardCharsets.UTF_8).length <= 75);
+        assertTrue(ls.get(i + 1).startsWith(" "));
+        String third = i + 2 < ls.size() && ls.get(i + 2).startsWith(" ") ? ls.get(i + 2).substring(1) : "";
+        assertEquals("가".repeat(40), ls.get(i).substring(8) + ls.get(i + 1).substring(1) + third);
     }
 
     @Test @DisplayName("날짜가 없으면 null") void c11() { assertNull(KoChrono.toICS(ev("우유 사기"))); }

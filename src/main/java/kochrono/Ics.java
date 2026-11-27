@@ -1,5 +1,6 @@
 package kochrono;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -26,6 +27,31 @@ final class Ics {
         return ymd(d) + "T" + hms(d) + "Z";
     }
 
+    /** TEXT 값 이스케이프 (RFC 5545 3.3.11) */
+    static String escapeText(String s) {
+        return s.replaceAll("[\\\\;,]", "\\\\$0").replaceAll("\\r?\\n", "\\\\n");
+    }
+
+    /** 75바이트가 넘는 줄은 CRLF와 공백으로 접는다 (RFC 5545 3.1). UTF-8 글자 중간에서는 끊지 않는다 */
+    static String fold(String line) {
+        List<String> out = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        int bytes = 0;
+        for (int cp : line.codePoints().toArray()) {
+            int len = new String(Character.toChars(cp)).getBytes(StandardCharsets.UTF_8).length;
+            // 이어지는 줄은 앞의 공백 1바이트를 뺀 74바이트까지
+            if (bytes + len > (out.isEmpty() ? 75 : 74)) {
+                out.add(cur.toString());
+                cur.setLength(0);
+                bytes = 0;
+            }
+            cur.appendCodePoint(cp);
+            bytes += len;
+        }
+        out.add(cur.toString());
+        return String.join("\r\n ", out);
+    }
+
     /** 날짜가 없으면 null */
     static String toICS(String defaultTitle, ZonedDateTime date, ZonedDateTime end, boolean hasTime,
                         Recurrence r, IcsOptions options) {
@@ -38,7 +64,7 @@ final class Ics {
                 + Long.toString(ThreadLocalRandom.current().nextLong(Long.MAX_VALUE), 36) + "@ko-chrono";
         List<String> lines = new ArrayList<>(List.of("BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ko-chrono//KO",
                 "CALSCALE:GREGORIAN", "BEGIN:VEVENT", "UID:" + uid,
-                "DTSTAMP:" + utc(o.now() != null ? o.now() : Instant.now()), "SUMMARY:" + title));
+                "DTSTAMP:" + utc(o.now() != null ? o.now() : Instant.now()), "SUMMARY:" + escapeText(title)));
         if (hasTime) {
             ZonedDateTime last = end != null ? end
                     : date.plusMinutes(o.durationMinutes() != null ? o.durationMinutes() : 60);
@@ -61,7 +87,7 @@ final class Ics {
         lines.add("END:VEVENT");
         lines.add("END:VCALENDAR");
         lines.add("");
-        return String.join("\r\n", lines);
+        return String.join("\r\n", lines.stream().map(Ics::fold).toList());
     }
 
     /** 시간대 옵션이 있으면 그 시간대의 벽시계, 없으면 값이 가진 시간대의 벽시계 */
