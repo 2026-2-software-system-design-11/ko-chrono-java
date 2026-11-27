@@ -35,6 +35,13 @@ class TimeParserTest {
         assertTrue(c.isEnd);
     }
 
+    @Test void 영어_표기와_콜론() {
+        assertEquals(List.of(15, 0), hm("3pm"));
+        assertEquals(List.of(9, 0), hm("9 AM"));
+        assertEquals(List.of(15, 30), hm("오후 3:30"));
+        assertTrue(TimeParser.parse("99:99").isEmpty());
+    }
+
     @Test void 짧은_시_범위는_두_조각() {
         assertEquals(List.of("오후 3", "5시"), texts(TimeParser.parse("오후 3~5시")));
     }

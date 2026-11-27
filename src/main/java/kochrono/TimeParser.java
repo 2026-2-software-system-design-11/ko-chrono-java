@@ -21,9 +21,14 @@ final class TimeParser {
             + ")\\s*시\\s*(\\d{1,2})\\s*분\\s*전(?=[\\s,에까]|$)");
     // "오전 중으로", "오후 중에"는 그 시간대의 끝(12시, 18시)까지
     private static final Pattern HALF_DAY = JsRegex.compile("(오전|오후)\\s*중(?!순)(?:으로|에는|에)?");
+    // "3pm", "9 AM", "12pm"
+    private static final Pattern AMPM = JsRegex.compile("(?<![\\d:])(\\d{1,2})(?::(\\d{2}))?\\s*([ap])\\.?m\\.?(?![a-z])",
+            Pattern.CASE_INSENSITIVE);
     // "3~5시", "오후 3~5시"는 "오후 3"과 "5시" 두 조각 (KoChrono가 "~"로 구간을 합친다)
     private static final Pattern SHORT_RANGE = JsRegex.compile("(" + PERIOD + ")?\\s*(" + HOUR_WORD + ")\\s*~\\s*(("
             + HOUR_WORD + ")\\s*시)");
+    // "15:30", "3:00", "오후 3:30"
+    private static final Pattern COLON = JsRegex.compile("(?:(" + PERIOD + ")\\s*)?(?<!\\d)(\\d{1,2}):(\\d{2})(?!\\d)");
 
     private TimeParser() {
     }
@@ -51,7 +56,9 @@ final class TimeParser {
         shortRange(text, out, taken);
         before(text, out, taken);
         halfDay(text, out, taken);
+        ampm(text, out, taken);
         clock(text, out, taken);
+        colon(text, out, taken);
         return out;
     }
 
@@ -101,6 +108,18 @@ final class TimeParser {
         }
     }
 
+    private static void ampm(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = AMPM.matcher(text); m.find(); ) {
+            int raw = Integer.parseInt(m.group(1));
+            if (raw < 1 || raw > 12 || !taken.take(m.start(), m.end())) {
+                continue;
+            }
+            int hour = applyMeridiem(m.group(3).equalsIgnoreCase("p") ? "오후" : "오전", raw);
+            int minute = m.group(2) != null ? Integer.parseInt(m.group(2)) : 0;
+            out.add(Fragment.of(m, time(hour, minute, true)));
+        }
+    }
+
     private static void clock(String text, List<Fragment> out, Taken taken) {
         for (Matcher m = CLOCK.matcher(text); m.find(); ) {
             Long raw = KoreanNumber.parse(m.group(2));
@@ -128,6 +147,17 @@ final class TimeParser {
                 c.midnight = true;
             }
             out.add(Fragment.of(m, c));
+        }
+    }
+
+    private static void colon(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = COLON.matcher(text); m.find(); ) {
+            int raw = Integer.parseInt(m.group(2));
+            int minute = Integer.parseInt(m.group(3));
+            if (raw > 23 || minute > 59 || !taken.take(m.start(), m.end())) {
+                continue;
+            }
+            out.add(Fragment.of(m, time(applyMeridiem(m.group(1), raw), minute, true)));
         }
     }
 }
