@@ -14,6 +14,9 @@ final class Components {
     /** "1년 뒤", "내년 이맘때": 연, 월, 주 이동 때 기준일의 날짜를 유지 */
     boolean sameDay;
 
+    /** 연 단위 이동 (내년 = +1). 있으면 "지난 월일은 내년" 규칙을 쓰지 않는다 */
+    Integer yearOffset;
+
     /** 월 단위 이동 (다음달 = +1) */
     Long monthOffset;
 
