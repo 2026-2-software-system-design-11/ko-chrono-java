@@ -53,6 +53,19 @@ class IcsTest {
                 .contains("DTEND;TZID=Asia/Seoul:20261031T153000"));
     }
 
+    @Test @DisplayName("크리스마스에 파티 (시각이 없으면 종일)") void c5() {
+        List<String> ev = event(KoChrono.toICS(ev("크리스마스에 파티"), FIXED));
+        assertTrue(ev.contains("SUMMARY:파티"));
+        assertTrue(ev.contains("DTSTART;VALUE=DATE:20261225"));
+        assertTrue(ev.contains("DTEND;VALUE=DATE:20261226"));
+    }
+
+    @Test @DisplayName("11월 16일부터 20일까지 출장 (종일 구간은 끝 다음날이 DTEND)") void c6() {
+        List<String> ev = event(KoChrono.toICS(ev("11월 16일부터 20일까지 출장"), FIXED));
+        assertTrue(ev.contains("DTSTART;VALUE=DATE:20261116"));
+        assertTrue(ev.contains("DTEND;VALUE=DATE:20261121"));
+    }
+
     @Test @DisplayName("날짜가 없으면 null") void c11() { assertNull(KoChrono.toICS(ev("우유 사기"))); }
     @Test @DisplayName("제목이 없으면 문장에서 찾은 부분") void c12() {
         assertTrue(event(KoChrono.toICS(p("내일 3시"), FIXED)).contains("SUMMARY:내일 3시"));

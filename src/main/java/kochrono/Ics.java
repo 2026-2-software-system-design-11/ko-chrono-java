@@ -45,6 +45,13 @@ final class Ics {
             lines.add(at(o, "DTSTART", date));
             lines.add(at(o, "DTEND", last));
         }
+        if (!hasTime) {
+            LocalDateTime first = wall(o, date);
+            LocalDateTime last = end != null ? wall(o, end) : first;
+            LocalDateTime after = last.plusDays(1);
+            lines.add("DTSTART;VALUE=DATE:" + ymd(first));
+            lines.add("DTEND;VALUE=DATE:" + ymd(after));
+        }
         lines.add("END:VEVENT");
         lines.add("END:VCALENDAR");
         lines.add("");
