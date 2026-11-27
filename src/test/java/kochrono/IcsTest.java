@@ -36,6 +36,26 @@ class IcsTest {
         return KoChrono.parse(s, OPTS);
     }
 
+    @Test @DisplayName("다음달까지 매주 월요일 9시 팀 회의") void c1() {
+        String ics = KoChrono.toICS(ev("다음달까지 매주 월요일 9시 팀 회의"), FIXED);
+        assertEquals(String.join("\r\n",
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//ko-chrono//KO",
+                "CALSCALE:GREGORIAN",
+                "BEGIN:VEVENT",
+                "UID:test@ko-chrono",
+                "DTSTAMP:20261030T050000Z",
+                "SUMMARY:팀 회의",
+                "DTSTART;TZID=Asia/Seoul:20261102T090000",
+                "DTEND;TZID=Asia/Seoul:20261102T100000",
+                // TZID가 있는 DTSTART와 함께 쓰는 UNTIL은 UTC여야 한다 (RFC 5545 3.3.10)
+                "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261130T145900Z",
+                "END:VEVENT",
+                "END:VCALENDAR",
+                ""), ics);
+    }
+
     @Test @DisplayName("내일 오후 3시부터 5시까지 회의 (끝이 있으면 DTEND)") void c2() {
         assertTrue(event(KoChrono.toICS(ev("내일 오후 3시부터 5시까지 회의"), FIXED)).containsAll(List.of(
                 "DTSTART;TZID=Asia/Seoul:20261031T150000", "DTEND;TZID=Asia/Seoul:20261031T170000")));
@@ -64,6 +84,16 @@ class IcsTest {
         List<String> ev = event(KoChrono.toICS(ev("11월 16일부터 20일까지 출장"), FIXED));
         assertTrue(ev.contains("DTSTART;VALUE=DATE:20261116"));
         assertTrue(ev.contains("DTEND;VALUE=DATE:20261121"));
+    }
+
+    @Test @DisplayName("11월 1일부터 12월 31일까지 매주 토요일 (종일 반복은 UNTIL도 날짜)") void c7() {
+        assertTrue(event(KoChrono.toICS(ev("11월 1일부터 12월 31일까지 매주 토요일 봉사"), FIXED)).containsAll(List.of(
+                "DTSTART;VALUE=DATE:20261107", "RRULE:FREQ=WEEKLY;BYDAY=SA;UNTIL=20261231")));
+    }
+
+    @Test @DisplayName("매주 수요일 오후 2시, 총 8회 (COUNT는 그대로)") void c8() {
+        assertTrue(event(KoChrono.toICS(p("매주 수요일 오후 2시, 총 8회"), FIXED.withTitle("영어 회화"))).containsAll(List.of(
+                "SUMMARY:영어 회화", "RRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=8")));
     }
 
     @Test @DisplayName("날짜가 없으면 null") void c11() { assertNull(KoChrono.toICS(ev("우유 사기"))); }
