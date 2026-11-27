@@ -45,6 +45,9 @@ final class Components {
     /** "음력 3월 3일", "음력 윤5월 1일" */
     LunarDate lunarDate;
 
+    /** "매주 월요일", "매달 15일": 반복 규칙 (RRULE 문자열은 resolve가 만든다) */
+    RecurSpec recur;
+
     /** 연 단위 이동 (내년 = +1). 있으면 "지난 월일은 내년" 규칙을 쓰지 않는다 */
     Integer yearOffset;
 
