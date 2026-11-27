@@ -35,6 +35,8 @@ class DateRulesTest {
         // 로스앤젤레스 2027-03-14 02:00에 서머타임이 시작된다. 02:30은 03:30이 되고, 기준 03:00보다 뒤라 오늘이다
         assertEquals(at(2027, 3, 14, 3, 30), date("새벽 2시 30분", at(2027, 3, 14, 3, 0), "America/Los_Angeles"));
         assertEquals(at(2027, 3, 14, 3, 30), date("내일 새벽 2시 30분", at(2027, 3, 13, 12, 0), "America/Los_Angeles"));
+        // 반복 일정의 첫 발생도 밀린 03:30으로 비교한다
+        assertEquals(at(2027, 3, 14, 3, 30), date("매일 새벽 2시 30분", at(2027, 3, 14, 3, 0), "America/Los_Angeles"));
     }
 
     @Test void 자정이_없는_날의_날짜는_1시() {

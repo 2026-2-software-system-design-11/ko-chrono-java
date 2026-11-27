@@ -58,7 +58,7 @@ final class Resolver {
         result.past = c.past;
         Fragment last = group.get(group.size() - 1);
         result.endIndex = last.index() + last.text().length();
-        return Periods.apply(result, c, s.dateSet, ref) ? result : null;
+        return Periods.apply(result, c, s.dateSet, opts) ? result : null;
     }
 
     /** 날짜 계산 중의 상태 */
