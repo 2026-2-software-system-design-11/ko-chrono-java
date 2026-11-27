@@ -45,4 +45,13 @@ class TimeParserTest {
     @Test void 짧은_시_범위는_두_조각() {
         assertEquals(List.of("오후 3", "5시"), texts(TimeParser.parse("오후 3~5시")));
     }
+
+    @Test void 시간_단어() {
+        assertEquals(List.of(19, 0), hm("저녁"));
+        assertTrue(one(TimeParser.parse("저녁")).components().approximate);
+        assertEquals(List.of(15, 0), hm("오후에"));
+        assertTrue(one(TimeParser.parse("이 시간")).components().sameTime);
+        assertTrue(TimeParser.parse("오후 반차").isEmpty());
+        assertTrue(TimeParser.parse("온도가 낮다").isEmpty());
+    }
 }

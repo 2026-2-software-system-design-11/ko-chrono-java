@@ -21,6 +21,12 @@ final class Components {
     /** "1년 뒤", "내년 이맘때": 연, 월, 주 이동 때 기준일의 날짜를 유지 */
     boolean sameDay;
 
+    /** "저녁", "아침"처럼 관례로 정한 시각 */
+    boolean approximate;
+
+    /** "내일 이 시간": 기준 시각의 시와 분을 쓴다 */
+    boolean sameTime;
+
     /** 연 단위 이동 (내년 = +1). 있으면 "지난 월일은 내년" 규칙을 쓰지 않는다 */
     Integer yearOffset;
 

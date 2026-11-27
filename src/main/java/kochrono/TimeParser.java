@@ -2,6 +2,7 @@ package kochrono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,6 +30,16 @@ final class TimeParser {
             + HOUR_WORD + ")\\s*시)");
     // "15:30", "3:00", "오후 3:30"
     private static final Pattern COLON = JsRegex.compile("(?:(" + PERIOD + ")\\s*)?(?<!\\d)(\\d{1,2}):(\\d{2})(?!\\d)");
+    // 단독 시간 단어. "낮"은 "낮다"와 겹쳐서 뒤에 공백이나 조사가 올 때만
+    private static final Pattern WORD = JsRegex.compile("(정오|자정|점심|아침|저녁|밤(?!새|낮)|퇴근|낮(?=[\\s에,]|$))(?!\\s*\\d)");
+    // "내일 오후", "오전에"는 9시, 15시 (규칙 25). 뒤에 조사, 공백, 끝만 허용하고
+    // "오전반", "오후 반차", "오전오후"처럼 다른 낱말이 붙으면 잡지 않는다
+    private static final Pattern HALF_WORD = JsRegex.compile(
+            "(?<![가-힣])(오전|오후)(?=(?:에는|에|엔|은|는|도|쯤|께)?(?:[\\s,.!?~]|$))(?!\\s*(?:반|오전|오후|\\d))");
+    private static final Map<String, Integer> WORD_HOUR = Map.of("정오", 12, "자정", 0, "점심", 12, "아침", 8, "저녁", 19,
+            "밤", 21, "퇴근", 18, "낮", 12, "오전", 9, "오후", 15);
+    // "내일 이 시간", "다음 주 이 시간"은 기준 시각의 시와 분. "같이 시간 내자"는 잡지 않는다
+    private static final Pattern SAME_TIME = JsRegex.compile("(?<![가-힣])이\\s*시간(?!대|\\s*(?:뒤|후|전|동안|이내|안에))");
 
     private TimeParser() {
     }
@@ -59,6 +70,9 @@ final class TimeParser {
         ampm(text, out, taken);
         clock(text, out, taken);
         colon(text, out, taken);
+        sameTime(text, out, taken);
+        halfWord(text, out, taken);
+        word(text, out, taken);
         return out;
     }
 
@@ -158,6 +172,42 @@ final class TimeParser {
                 continue;
             }
             out.add(Fragment.of(m, time(applyMeridiem(m.group(1), raw), minute, true)));
+        }
+    }
+
+    private static void sameTime(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = SAME_TIME.matcher(text); m.find(); ) {
+            if (taken.take(m.start(), m.end())) {
+                Components c = new Components();
+                c.sameTime = true;
+                out.add(Fragment.of(m, c));
+            }
+        }
+    }
+
+    private static void halfWord(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = HALF_WORD.matcher(text); m.find(); ) {
+            if (taken.take(m.start(), m.end())) {
+                Components c = time(WORD_HOUR.get(m.group(1)), 0, true);
+                c.approximate = true;
+                out.add(Fragment.of(m, c));
+            }
+        }
+    }
+
+    private static void word(String text, List<Fragment> out, Taken taken) {
+        for (Matcher m = WORD.matcher(text); m.find(); ) {
+            if (!taken.take(m.start(), m.end())) {
+                continue;
+            }
+            Components c = time(WORD_HOUR.get(m.group(1)), 0, true);
+            if (m.group(1).equals("자정")) {
+                c.midnight = true;
+            } else if (!m.group(1).equals("정오")) {
+                // 정오와 자정은 정확한 시각, 나머지(아침, 저녁, 밤, 점심, 낮, 퇴근)는 관례
+                c.approximate = true;
+            }
+            out.add(Fragment.of(m, c));
         }
     }
 }
