@@ -30,4 +30,14 @@ class RangeMergerTest {
     @Test void 날짜_범위() {
         assertEquals(List.of(at(11, 1, 0, 0), at(11, 3, 23, 59)), range("11월 1일부터 11월 3일까지"));
     }
+
+    @Test void 끝이_시작보다_앞이면_별개_표현() {
+        assertEquals(2, KoChrono.parseAll("추석 ~ 11월", OPTS).size());
+    }
+
+    @Test void 끝에_일이나_요일만_있는_범위() {
+        assertEquals(List.of(at(11, 1, 0, 0), at(11, 3, 23, 59)), range("11월 1일부터 3일까지"));
+        assertEquals(List.of(at(11, 28, 0, 0), at(12, 2, 23, 59)), range("11월 28일부터 2일까지"));
+        assertEquals(List.of(at(11, 2, 0, 0), at(11, 6, 23, 59)), range("월~금"));
+    }
 }
