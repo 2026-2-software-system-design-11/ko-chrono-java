@@ -46,30 +46,33 @@ final class Days {
         int y = c.year != null ? c.year : ref.getYear() + (c.yearOffset != null ? c.yearOffset : 0);
         // "작년", "내년"처럼 연도만 있으면 1월 1일. "내년 이맘때", "1년 뒤"는 오늘 날짜 유지.
         // "13월 말"처럼 12를 넘는 월(검사하지 않는 자리)은 원본처럼 다음 해로 넘어간다
-        int month = c.month != null ? c.month : hasYear && !c.sameDay ? 1 : ref.getMonthValue();
-        YearMonth ym = YearMonth.of(y, 1).plusMonths(month - 1L);
+        int m0 = c.month != null ? c.month - 1 : hasYear && !c.sameDay ? 0 : ref.getMonthValue() - 1;
         // "5일까지"처럼 일만 있으면: 오늘이 그날을 넘었으면 다음 달, 아니면 이번 달 (오늘 포함).
         // 그 달에 없는 날("11월에 31일")은 아래에서 버린다
         if (!hasYear && c.month == null && c.day != null && c.monthOffset == null && c.nthWeek == null) {
             // 과거형(규칙 37)이면 반대로: 아직 안 온 날이면 지난달
             if (c.past ? c.day > ref.getDayOfMonth() : c.day < ref.getDayOfMonth()) {
-                ym = ym.plusMonths(c.past ? -1 : 1);
+                m0 += c.past ? -1 : 1;
             }
+            y += Math.floorDiv(m0, 12);
+            m0 = Math.floorMod(m0, 12);
             s.bare = Resolver.Bare.DAY;
         }
         // 연도 미지정이고 이미 지났으면 내년으로.
         // 월일("3월 1일")은 그 날이, 월("3월", "2월 말")은 그 달이 통째로 지났을 때.
         // 그 해에 없는 날(평년의 2월 29일)은 원본처럼 그 달 1일부터 센 날(3월 1일)로 비교한다
         if (!hasYear && c.month != null) {
+            YearMonth ym = Calendars.yearMonth(y, m0);
             // 과거형(규칙 37)이면 반대로: 그 날(달)이 아직 시작되지 않았으면 작년
             boolean move = c.past
                     ? Calendars.dayCountedFrom(ym, c.day != null ? c.day : 1).atStartOfDay().isAfter(ref)
                     : Calendars.dayCountedFrom(ym, c.day != null ? c.day : ym.lengthOfMonth()).atTime(23, 59).isBefore(ref);
             if (move) {
-                ym = ym.plusYears(c.past ? -1 : 1);
+                y += c.past ? -1 : 1;
             }
             s.bare = Resolver.Bare.YEAR;
         }
+        YearMonth ym = Calendars.yearMonth(y, m0);
         int day = c.day != null ? c.day : c.month != null || (hasYear && !c.sameDay) ? 1 : ref.getDayOfMonth();
         if (c.monthPart != null) {
             day = partDay(ym, c.monthPart);
@@ -89,7 +92,7 @@ final class Days {
 
     /** 2. 상대 월 */
     static boolean relativeMonth(Components c, LocalDateTime ref, Resolver.DateState s) {
-        YearMonth ym = YearMonth.from(ref).plusMonths(c.monthOffset);
+        YearMonth ym = Calendars.yearMonth(ref.getYear(), ref.getMonthValue() - 1 + c.monthOffset);
         int day = c.monthPart != null ? partDay(ym, c.monthPart) : c.day != null ? c.day : 1;
         if (day > ym.lengthOfMonth()) {
             return false;
@@ -105,7 +108,8 @@ final class Days {
         LocalDateTime ref = opts.referenceDate();
         if (c.nthWeek != null) {
             // 달은 1, 2단계에서 정해진 달, 없으면 기준 달
-            YearMonth month = YearMonth.from(s.dateSet ? s.d : ref);
+            LocalDateTime base = s.dateSet ? s.d : ref;
+            YearMonth month = Calendars.yearMonth(base.getYear(), base.getMonthValue() - 1);
             int target = c.weekday != null ? c.weekday : opts.weekStart() == WeekStart.MONDAY ? 1 : 0;
             Integer day = Calendars.nthWeekday(month, target, c.nthWeek);
             // "11월 다섯째 주 토요일"처럼 없는 날짜는 null

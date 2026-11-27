@@ -20,7 +20,7 @@ class AbsoluteDateParserTest {
     @Test void 두_자리_연도() {
         assertEquals(2027, one(AbsoluteDateParser.parse("27.1.2")).components().year);
         assertEquals(1970, one(AbsoluteDateParser.parse("70.5.6")).components().year);
-        assertEquals(1950, AbsoluteDateParser.expandYear("0050"));
+        assertEquals(50, AbsoluteDateParser.expandYear("0050"));
     }
 
     @Test void 빗금과_한글_월일() {

@@ -33,14 +33,11 @@ final class AbsoluteDateParser {
     private AbsoluteDateParser() {
     }
 
-    /**
-     * 두 자리 연도: 00~69는 20xx, 70~99는 19xx.
-     * 네 자리 0000~0099년은 원본의 Date 생성자가 1900년대로 읽으므로 같은 결과가 되게 여기서 바꾼다
-     */
+    /** 두 자리 연도: 00~69는 20xx, 70~99는 19xx */
     static int expandYear(String y) {
         int n = Integer.parseInt(y);
         if (y.length() != 2) {
-            return n < 100 ? 1900 + n : n;
+            return n;
         }
         return n < 70 ? 2000 + n : 1900 + n;
     }

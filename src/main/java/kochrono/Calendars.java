@@ -18,6 +18,15 @@ final class Calendars {
         return d.getDayOfWeek().getValue() % 7;
     }
 
+    /**
+     * 원본의 {@code new Date(y, m0, ...)} 생성자가 가리키는 달. 달은 0부터 세고 넘치면 다음 해로 가며,
+     * 생성자는 0~99년을 1900년대로 읽는다(기준 시각이 50년이면 "3월 1일"은 1950년). 원본이 생성자를 쓰는 자리에서만 쓴다.
+     */
+    static YearMonth yearMonth(long y, long m0) {
+        long year = y >= 0 && y <= 99 ? 1900 + y : y;
+        return YearMonth.of(Math.toIntExact(year), 1).plusMonths(m0);
+    }
+
     /** 그날 0시에서 hour시간 minute분 뒤. "0시 10분 전"(-1시 -10분)은 전날 23:50이 된다 */
     static LocalDateTime atClock(LocalDate day, long hour, long minute) {
         return day.atStartOfDay().plusHours(hour).plusMinutes(minute);
