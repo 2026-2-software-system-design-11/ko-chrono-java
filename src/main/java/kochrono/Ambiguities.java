@@ -26,6 +26,19 @@ final class Ambiguities {
             set(result, Ambiguity.Reason.MERIDIEM, List.of(alt));
             return;
         }
+        // "다음 토요일": 규칙 23(오늘 제외 가장 가까운)과 "다음 주 토요일"이 다르면 후보로
+        if (c.weekdayDir == Components.WeekdayDir.NEXT && c.weekday != null) {
+            LocalDateTime alt = Resolver.startOfWeek(ref, opts.weekStart())
+                    .plusDays(7 + Resolver.offsetInWeek(c.weekday, opts.weekStart()));
+            alt = alt.withHour(d.getHour()).withMinute(d.getMinute());
+            if (!alt.equals(d)) {
+                set(result, Ambiguity.Reason.NEXT_WEEKDAY, List.of(alt));
+                return;
+            }
+        }
+        if (c.approximate) {
+            set(result, Ambiguity.Reason.APPROXIMATE_TIME, List.of());
+        }
     }
 
     private static void set(LocalResult result, Ambiguity.Reason reason, List<LocalDateTime> alternatives) {
