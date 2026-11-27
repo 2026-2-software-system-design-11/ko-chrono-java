@@ -1,7 +1,6 @@
 package kochrono;
 
 import java.time.DateTimeException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
@@ -77,14 +76,14 @@ final class Resolver {
     private static boolean resolveDay(Components c, ResolveOptions opts, DateState s) {
         LocalDateTime ref = opts.referenceDate();
         boolean isLunar = c.lunar != null || c.lunarDate != null;
-        if (isLunar && !Days.lunar(c, ref, s)) {
+        if (isLunar && !Days.lunar(c, opts, s)) {
             return false;
         }
         boolean hasYear = c.year != null || c.yearOffset != null;
-        if (!isLunar && (hasYear || c.month != null || c.day != null) && !Days.absolute(c, ref, s)) {
+        if (!isLunar && (hasYear || c.month != null || c.day != null) && !Days.absolute(c, opts, s)) {
             return false;
         }
-        if (c.monthOffset != null && !Days.relativeMonth(c, ref, s)) {
+        if (c.monthOffset != null && !Days.relativeMonth(c, opts, s)) {
             return false;
         }
         if (!Days.week(c, opts, s)) {
@@ -160,11 +159,11 @@ final class Resolver {
         return r.getDayOfMonth() == d.getDayOfMonth() ? r : null;
     }
 
-    static LocalDateTime startOfWeek(LocalDateTime d, WeekStart weekStart) {
-        LocalDate day = d.toLocalDate();
-        int dow = Calendars.weekdayNumber(day);
-        int diff = weekStart == WeekStart.MONDAY ? (dow + 6) % 7 : dow;
-        return day.minusDays(diff).atStartOfDay();
+    static LocalDateTime startOfWeek(LocalDateTime d, ResolveOptions opts) {
+        LocalDateTime start = opts.local(d.toLocalDate().atStartOfDay());
+        int dow = Calendars.weekdayNumber(start.toLocalDate());
+        int diff = opts.weekStart() == WeekStart.MONDAY ? (dow + 6) % 7 : dow;
+        return opts.local(start.minusDays(diff));
     }
 
     /** 주의 시작 요일에서 그 요일까지 며칠인지 */

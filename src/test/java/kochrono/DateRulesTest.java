@@ -36,4 +36,11 @@ class DateRulesTest {
         assertEquals(at(2027, 3, 14, 3, 30), date("새벽 2시 30분", at(2027, 3, 14, 3, 0), "America/Los_Angeles"));
         assertEquals(at(2027, 3, 14, 3, 30), date("내일 새벽 2시 30분", at(2027, 3, 13, 12, 0), "America/Los_Angeles"));
     }
+
+    @Test void 자정이_없는_날의_날짜는_1시() {
+        // 산티아고 2027-09-05 00:00에 서머타임이 시작된다
+        assertEquals(at(2027, 9, 5, 1, 0), date("9월 5일", at(2027, 9, 1, 12, 0), "America/Santiago"));
+        assertEquals(at(2027, 9, 5, 1, 0), date("일요일", at(2027, 9, 4, 12, 0), "America/Santiago"));
+        assertEquals(at(2027, 9, 5, 1, 0), date("이번주 일요일", at(2027, 9, 1, 12, 0), "America/Santiago"));
+    }
 }

@@ -28,7 +28,7 @@ final class Ambiguities {
         }
         // "다음 토요일": 규칙 23(오늘 제외 가장 가까운)과 "다음 주 토요일"이 다르면 후보로
         if (c.weekdayDir == Components.WeekdayDir.NEXT && c.weekday != null) {
-            LocalDateTime alt = Resolver.startOfWeek(ref, opts.weekStart())
+            LocalDateTime alt = Resolver.startOfWeek(ref, opts)
                     .plusDays(7 + Resolver.offsetInWeek(c.weekday, opts.weekStart()));
             alt = alt.withHour(d.getHour()).withMinute(d.getMinute());
             if (!alt.equals(d)) {

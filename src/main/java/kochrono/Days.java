@@ -13,7 +13,8 @@ final class Days {
      * 0. 음력 명절과 음력 날짜 (규칙 29, 32): 연도를 말했으면 그 음력 해, 아니면 (연휴까지) 지나지 않은 가장 가까운 것.
      * 음력 12월은 양력으로 다음 해 1월이라 작년 음력부터 본다. 표에 없는 날짜는 null
      */
-    static boolean lunar(Components c, LocalDateTime ref, Resolver.DateState s) {
+    static boolean lunar(Components c, ResolveOptions opts, Resolver.DateState s) {
+        LocalDateTime ref = opts.referenceDate();
         Long said = c.year != null ? Long.valueOf(c.year)
                 : c.yearOffset != null ? Long.valueOf(ref.getYear() + c.yearOffset) : null;
         long tail = (c.dayOffset != null ? c.dayOffset : 0)
@@ -29,8 +30,8 @@ final class Days {
             if (solar == null) {
                 continue;
             }
-            LocalDateTime start = solar.atStartOfDay();
-            LocalDateTime lastMoment = solar.plusDays(tail).atTime(23, 59);
+            LocalDateTime start = opts.local(solar.atStartOfDay());
+            LocalDateTime lastMoment = opts.local(solar.plusDays(tail).atTime(23, 59));
             if (said != null || (c.past ? !start.isAfter(ref) : !lastMoment.isBefore(ref))) {
                 s.d = start;
                 s.dateSet = true;
@@ -41,7 +42,8 @@ final class Days {
     }
 
     /** 1. 절대 날짜 */
-    static boolean absolute(Components c, LocalDateTime ref, Resolver.DateState s) {
+    static boolean absolute(Components c, ResolveOptions opts, Resolver.DateState s) {
+        LocalDateTime ref = opts.referenceDate();
         boolean hasYear = c.year != null || c.yearOffset != null;
         int y = c.year != null ? c.year : ref.getYear() + (c.yearOffset != null ? c.yearOffset : 0);
         // "작년", "내년"처럼 연도만 있으면 1월 1일. "내년 이맘때", "1년 뒤"는 오늘 날짜 유지.
@@ -65,8 +67,9 @@ final class Days {
             YearMonth ym = Calendars.yearMonth(y, m0);
             // 과거형(규칙 37)이면 반대로: 그 날(달)이 아직 시작되지 않았으면 작년
             boolean move = c.past
-                    ? Calendars.dayCountedFrom(ym, c.day != null ? c.day : 1).atStartOfDay().isAfter(ref)
-                    : Calendars.dayCountedFrom(ym, c.day != null ? c.day : ym.lengthOfMonth()).atTime(23, 59).isBefore(ref);
+                    ? opts.local(Calendars.dayCountedFrom(ym, c.day != null ? c.day : 1).atStartOfDay()).isAfter(ref)
+                    : opts.local(Calendars.dayCountedFrom(ym, c.day != null ? c.day : ym.lengthOfMonth()).atTime(23, 59))
+                            .isBefore(ref);
             if (move) {
                 y += c.past ? -1 : 1;
             }
@@ -85,20 +88,22 @@ final class Days {
         if (day > ym.lengthOfMonth()) {
             return false;
         }
-        s.d = Calendars.dayCountedFrom(ym, day).atStartOfDay();
+        s.d = opts.local(Calendars.dayCountedFrom(ym, day).atStartOfDay());
         s.dateSet = true;
         return true;
     }
 
     /** 2. 상대 월 */
-    static boolean relativeMonth(Components c, LocalDateTime ref, Resolver.DateState s) {
+    static boolean relativeMonth(Components c, ResolveOptions opts, Resolver.DateState s) {
+        LocalDateTime ref = opts.referenceDate();
         YearMonth ym = Calendars.yearMonth(ref.getYear(), ref.getMonthValue() - 1 + c.monthOffset);
         int day = c.monthPart != null ? partDay(ym, c.monthPart) : c.day != null ? c.day : 1;
         if (day > ym.lengthOfMonth()) {
             return false;
         }
         // "다음달 이맘때"는 오늘 날짜 유지
-        s.d = (c.sameDay ? Calendars.sameDayIn(ym, ref.getDayOfMonth()) : Calendars.dayCountedFrom(ym, day)).atStartOfDay();
+        s.d = opts.local((c.sameDay ? Calendars.sameDayIn(ym, ref.getDayOfMonth()) : Calendars.dayCountedFrom(ym, day))
+                .atStartOfDay());
         s.dateSet = true;
         return true;
     }
@@ -116,7 +121,7 @@ final class Days {
             if (day == null) {
                 return false;
             }
-            s.d = month.atDay(day).atStartOfDay();
+            s.d = opts.local(month.atDay(day).atStartOfDay());
             s.dateSet = true;
         } else if (c.weekday != null && c.weekOffset == null && c.day != null) {
             // "11월 5일 목요일": 날짜가 우선. 요일이 안 맞으면 어느 쪽이 맞는지 모르므로 null
@@ -130,14 +135,14 @@ final class Days {
 
     private static LocalDateTime weekDay(Components c, ResolveOptions opts, Resolver.DateState s) {
         LocalDateTime ref = opts.referenceDate();
-        LocalDateTime today = ref.toLocalDate().atStartOfDay();
+        LocalDateTime today = opts.local(ref.toLocalDate().atStartOfDay());
         if (c.weekOffset != null && c.sameDay) {
             // "다음주 이맘때"는 7일 뒤
-            return today.plusDays(c.weekOffset * 7L);
+            return opts.local(today.plusDays(c.weekOffset * 7L));
         }
         if (c.weekOffset != null) {
-            LocalDateTime sow = Resolver.startOfWeek(ref, opts.weekStart()).plusDays(c.weekOffset * 7L);
-            return c.weekday != null ? sow.plusDays(Resolver.offsetInWeek(c.weekday, opts.weekStart())) : sow;
+            LocalDateTime sow = opts.local(Resolver.startOfWeek(ref, opts).plusDays(c.weekOffset * 7L));
+            return c.weekday != null ? opts.local(sow.plusDays(Resolver.offsetInWeek(c.weekday, opts.weekStart()))) : sow;
         }
         // 요일 단독: 오늘 포함, 가장 가까운 미래의 그 요일
         int dow = Calendars.weekdayNumber(today.toLocalDate());
@@ -157,7 +162,7 @@ final class Days {
             }
             s.bare = Resolver.Bare.WEEK;
         }
-        return today.plusDays(diff);
+        return opts.local(today.plusDays(diff));
     }
 
     static int partDay(YearMonth month, Components.MonthPart part) {
