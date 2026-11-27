@@ -44,6 +44,20 @@ final class Grouping {
         return Components.merge(group.stream().map(Fragment::components).toList());
     }
 
+    /** 원본의 DATE_KEYS(연, 월, 일, 요일, 각종 이동, 음력) 중 하나라도 있는지 */
+    static boolean hasDate(Components c) {
+        return c.day != null || c.weekday != null || hasDateBesidesDayAndWeekday(c);
+    }
+
+    private static boolean hasDateBesidesDayAndWeekday(Components c) {
+        return c.year != null || c.yearOffset != null || c.month != null || c.dayOffset != null || c.weekOffset != null
+                || c.monthOffset != null || c.monthPart != null || c.lunar != null || c.lunarDate != null;
+    }
+
+    private static boolean hasRelative(Components c) {
+        return c.hourOffset != null || c.minuteOffset != null;
+    }
+
     private static boolean hasDayKey(Components c) {
         return c.day != null || c.dayOffset != null || c.weekday != null || c.monthPart != null;
     }
@@ -58,6 +72,10 @@ final class Grouping {
     static boolean hasConflict(Components a, Components b) {
         boolean dayConflict = hasDayKey(a) && hasDayKey(b) && !weekdayNote(a, b) && !weekdayNote(b, a);
         boolean bothHour = a.hour != null && b.hour != null;
-        return dayConflict || bothHour;
+        // 규칙 15: "내일"과 "30분 후"는 서로 다른 표현
+        boolean dateVsRel = (hasDate(a) && hasRelative(b)) || (hasRelative(a) && hasDate(b));
+        // 규칙 34: "다음주부터 매주 월요일"의 날짜는 반복의 시작, 끝이라 따로 해석한 뒤 KoChrono가 묶는다
+        boolean recurVsDate = (a.recur != null && hasDate(b)) || (b.recur != null && hasDate(a));
+        return dayConflict || bothHour || dateVsRel || recurVsDate;
     }
 }

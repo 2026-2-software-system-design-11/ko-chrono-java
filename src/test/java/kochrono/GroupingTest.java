@@ -19,6 +19,7 @@ class GroupingTest {
     @Test void 조사와_공백만_사이에_있으면_묶는다() {
         assertEquals(List.of(2), sizes("내일은 오후 3시"));
         assertEquals(List.of(1, 1), sizes("내일이나 오후 3시"));
+        assertEquals(List.of(1, 1), sizes("내일 30분 후"));
         assertEquals(List.of(2, 2), sizes("내일 10시 아니면 모레 2시"));
     }
 
