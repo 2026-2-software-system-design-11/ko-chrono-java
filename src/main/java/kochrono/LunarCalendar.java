@@ -39,6 +39,9 @@ final class LunarCalendar {
                 {8, 0, 2028, 9, 19}, {9, 0, 2028, 10, 18}, {10, 0, 2028, 11, 16}, {11, 0, 2028, 12, 16},
                 {12, 0, 2029, 1, 15}})));
 
+    /** 표가 있는 음력 해 */
+    static final List<Integer> YEARS = List.copyOf(MONTH_STARTS.keySet());
+
     private LunarCalendar() {
     }
 
@@ -78,5 +81,25 @@ final class LunarCalendar {
             }
         }
         return null;
+    }
+
+    /** 설날(1/1), 부처님 오신 날(4/8), 추석(8/15)의 양력 날짜 */
+    static LocalDate holiday(long year, Components.LunarHoliday which) {
+        return switch (which) {
+            case SEOLLAL -> toSolar(year, 1, 1, false);
+            case BUDDHA -> toSolar(year, 4, 8, false);
+            case CHUSEOK -> toSolar(year, 8, 15, false);
+        };
+    }
+
+    /** 각 음력 달의 길이 (검증용). 모르면 null */
+    static List<Integer> monthLengths(int year) {
+        List<MonthStart> months = MONTH_STARTS.get(year);
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < months.size(); i++) {
+            LocalDate next = nextStart(year, i);
+            out.add(next != null ? (int) ChronoUnit.DAYS.between(months.get(i).solar(), next) : null);
+        }
+        return out;
     }
 }

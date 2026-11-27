@@ -57,4 +57,6 @@ final class Components {
     boolean isEnd;
 
     enum MonthPart { START, MIDDLE, END }
+
+    enum LunarHoliday { SEOLLAL, CHUSEOK, BUDDHA }
 }
