@@ -28,6 +28,8 @@ final class Pipeline {
         List<List<Fragment>> groups = Grouping.group(dedupe(text), text);
         boolean[] pastOf = pastOf(groups, text);
         List<LocalResult> results = new ArrayList<>();
+        List<Components> comps = new ArrayList<>();
+        List<List<Fragment>> resultGroups = new ArrayList<>();
         for (int gi = 0; gi < groups.size(); gi++) {
             List<Fragment> g = groups.get(gi);
             Fragment last = g.get(g.size() - 1);
@@ -60,8 +62,11 @@ final class Pipeline {
             r.index = g.get(0).index() + (raw.length() - JsRegex.trimStart(raw).length());
             r.text = JsRegex.trim(raw);
             results.add(r);
+            comps.add(Grouping.merge(g));
+            resultGroups.add(g);
         }
-        return results;
+        RangeMerger.Merged merged = RangeMerger.merge(text, results, resultGroups, comps);
+        return merged.results();
     }
 
     /** 모든 파서의 조각을 모으고 겹치는 조각은 더 긴 것만 남긴다 */
