@@ -17,6 +17,7 @@ class RecurrenceBinderTest {
 
     @Test void 앞뒤의_마감은_UNTIL() {
         assertEquals("FREQ=WEEKLY;BYDAY=MO;UNTIL=20261130T235900", rrule("다음달까지 매주 월요일 9시"));
+        assertEquals("FREQ=WEEKLY;BYDAY=MO;UNTIL=20261220T235900", rrule("매주 월요일 9시 12월 20일까지"));
         assertEquals("FREQ=DAILY;UNTIL=20261031", rrule("이번달까지 매일"));
     }
 

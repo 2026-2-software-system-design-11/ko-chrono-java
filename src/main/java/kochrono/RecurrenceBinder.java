@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 /**
  * 반복 일정 앞뒤의 날짜와 횟수를 반복에 묶는다 (규칙 34).
  * <ul>
- *   <li>앞의 마감, 구간 ("다음달까지", "11월 1일부터 12월 31일까지"): 그 시작 이후 첫 발생, 끝은 UNTIL</li>
+ *   <li>앞이나 뒤의 마감, 구간 ("다음달까지", "11월 1일부터 12월 31일까지"): 그 시작 이후 첫 발생, 끝은 UNTIL</li>
  *   <li>앞의 "A부터": A 이후 첫 발생</li>
  *   <li>뒤의 "총 N회", "N번 반복": COUNT</li>
  * </ul>
@@ -55,6 +55,13 @@ final class RecurrenceBinder {
                     out.remove(out.size() - 1);
                     bound = true;
                 }
+            }
+            LocalResult next = i + 1 < results.size() ? results.get(i + 1) : null;
+            if (b.r.recur.until() == null && next != null && next.end != null && next.recur == null
+                    && GAP.matcher(Texts.slice(text, to, next.index)).find() && b.bindTo(next, comps.get(i + 1))) {
+                to = next.index + next.text.length();
+                bound = true;
+                i++;
             }
            
             Matcher count = COUNT.matcher(Texts.slice(text, to));
