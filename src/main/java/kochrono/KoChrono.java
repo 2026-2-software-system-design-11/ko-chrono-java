@@ -61,6 +61,39 @@ public final class KoChrono {
         return parseDate(text, null);
     }
 
+    /**
+     * 할 일이나 일정 한 줄을 제목과 시점으로 나눈다. 날짜로 인식된 부분과 거기 붙은 조사를 뺀 나머지가 제목이다.
+     * "다음주 금요일까지 보고서 제출"은 제목 "보고서 제출", 마감 금요일 23:59.
+     */
+    public static ParsedEvent parseEvent(String text, ParseOptions options) {
+        return EventTitle.toEvent(text, parseAll(text, options));
+    }
+
+    public static ParsedEvent parseEvent(String text) {
+        return parseEvent(text, null);
+    }
+
+    /**
+     * parse 결과를 iCalendar(.ics) 문자열로 바꾼다. 시각이 있으면 DTSTART와 DTEND(끝이 없으면 durationMinutes 뒤),
+     * 없으면 종일 일정(VALUE=DATE, DTEND는 마지막 날의 다음날). 반복이면 RRULE을 넣는다.
+     */
+    public static String toICS(ParseResult result, IcsOptions options) {
+        return Ics.toICS(result.text(), result.date(), result.end(), result.hasTime(), result.recurrence(), options);
+    }
+
+    public static String toICS(ParseResult result) {
+        return toICS(result, null);
+    }
+
+    /** parseEvent 결과를 iCalendar 문자열로 바꾼다. 날짜가 없으면 null */
+    public static String toICS(ParsedEvent event, IcsOptions options) {
+        return Ics.toICS(event.title(), event.date(), event.end(), event.hasTime(), event.recurrence(), options);
+    }
+
+    public static String toICS(ParsedEvent event) {
+        return toICS(event, null);
+    }
+
     private static ParseResult toResult(LocalResult r, Function<LocalDateTime, ZonedDateTime> at) {
         Recurrence recurrence = null;
         if (r.recur != null) {
