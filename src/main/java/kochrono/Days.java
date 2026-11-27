@@ -1,11 +1,43 @@
 package kochrono;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 /** resolve의 날짜 단계들. 각 단계는 없는 날짜면 false를 돌려준다 */
 final class Days {
     private Days() {
+    }
+
+    /**
+     * 0. 음력 명절과 음력 날짜 (규칙 29, 32): 연도를 말했으면 그 음력 해, 아니면 (연휴까지) 지나지 않은 가장 가까운 것.
+     * 음력 12월은 양력으로 다음 해 1월이라 작년 음력부터 본다. 표에 없는 날짜는 null
+     */
+    static boolean lunar(Components c, LocalDateTime ref, Resolver.DateState s) {
+        Long said = c.year != null ? Long.valueOf(c.year)
+                : c.yearOffset != null ? Long.valueOf(ref.getYear() + c.yearOffset) : null;
+        long tail = (c.dayOffset != null ? c.dayOffset : 0)
+                + (c.durationDays != null && c.durationDays != 0 ? c.durationDays - 1 : 0);
+        long y0 = ref.getYear();
+        // 과거형(규칙 37)이면 거꾸로: 이미 시작된 가장 가까운 것
+        long[] years = said != null ? new long[] {said}
+                : c.past ? new long[] {y0 + 1, y0, y0 - 1, y0 - 2} : new long[] {y0 - 1, y0, y0 + 1, y0 + 2};
+        for (long y : years) {
+            LocalDate solar = c.lunar != null ? LunarCalendar.holiday(y, c.lunar)
+                    : LunarCalendar.toSolar(y, c.lunarDate.month(), c.lunarDate.day(), c.lunarDate.leap());
+            // 그 해에 없는 날 ("음력 2월 30일", 윤달)
+            if (solar == null) {
+                continue;
+            }
+            LocalDateTime start = solar.atStartOfDay();
+            LocalDateTime lastMoment = solar.plusDays(tail).atTime(23, 59);
+            if (said != null || (c.past ? !start.isAfter(ref) : !lastMoment.isBefore(ref))) {
+                s.d = start;
+                s.dateSet = true;
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 1. 절대 날짜 */

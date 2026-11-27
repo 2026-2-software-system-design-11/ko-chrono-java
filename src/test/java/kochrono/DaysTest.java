@@ -22,4 +22,11 @@ class DaysTest {
         assertEquals(at(2026, 11, 5), resolve("11월 5일 목요일", AbsoluteDateParser::parse, WeekdayParser::parse).date);
         assertNull(resolve("11월 5일 수요일", AbsoluteDateParser::parse, WeekdayParser::parse));
     }
+
+    @Test void 음력() {
+        assertEquals(at(2027, 2, 7), resolve("설날", HolidayParser::parse).date);
+        assertEquals(at(2026, 9, 25), resolve("올해 추석", RelativeYearParser::parse, HolidayParser::parse).date);
+        assertEquals(at(2027, 4, 9), resolve("음력 3월 3일", HolidayParser::parse).date);
+        assertNull(resolve("2030년 설날", AbsoluteDateParser::parse, HolidayParser::parse));
+    }
 }

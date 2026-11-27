@@ -66,7 +66,10 @@ final class Resolver {
     /** 날짜 부분. 없는 날짜면 false */
     private static boolean resolveDay(Components c, ResolveOptions opts, DateState s) {
         LocalDateTime ref = opts.referenceDate();
-        boolean isLunar = false;
+        boolean isLunar = c.lunar != null || c.lunarDate != null;
+        if (isLunar && !Days.lunar(c, ref, s)) {
+            return false;
+        }
         boolean hasYear = c.year != null || c.yearOffset != null;
         if (!isLunar && (hasYear || c.month != null || c.day != null) && !Days.absolute(c, ref, s)) {
             return false;
