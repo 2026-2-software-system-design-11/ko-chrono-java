@@ -18,6 +18,18 @@ final class Components {
     /** 기준일로부터 일 단위 이동 (내일 = +1) */
     Long dayOffset;
 
+    /** 기준 주로부터 주 단위 이동 (다음주 = +1) */
+    Integer weekOffset;
+
+    /** 0=일 ... 6=토 (원본의 요일 번호 규약) */
+    Integer weekday;
+
+    /** "주말" 단독: 오늘이 토, 일이면 오늘, 아니면 다가오는 토요일 */
+    boolean weekend;
+
+    /** "지난 금요일"(오늘 제외 과거)과 "다음 금요일"(오늘 제외 미래) */
+    WeekdayDir weekdayDir;
+
     /** "1년 뒤", "내년 이맘때": 연, 월, 주 이동 때 기준일의 날짜를 유지 */
     boolean sameDay;
 
@@ -26,6 +38,12 @@ final class Components {
 
     /** "내일 이 시간": 기준 시각의 시와 분을 쓴다 */
     boolean sameTime;
+
+    /** 음력 명절. 양력 날짜는 resolve가 음력 표에서 찾는다 */
+    LunarHoliday lunar;
+
+    /** "음력 3월 3일", "음력 윤5월 1일" */
+    LunarDate lunarDate;
 
     /** 연 단위 이동 (내년 = +1). 있으면 "지난 월일은 내년" 규칙을 쓰지 않는다 */
     Integer yearOffset;
@@ -53,10 +71,18 @@ final class Components {
     Long durationMonths;
     Long durationMinutes;
 
+    /** "N째 주": 1~5, 마지막은 -1 */
+    Integer nthWeek;
+
     /** 이 조각이 "~까지" 종료점인지 */
     boolean isEnd;
+
+    enum WeekdayDir { PAST, NEXT }
 
     enum MonthPart { START, MIDDLE, END }
 
     enum LunarHoliday { SEOLLAL, CHUSEOK, BUDDHA }
+
+    record LunarDate(int month, int day, boolean leap) {
+    }
 }
