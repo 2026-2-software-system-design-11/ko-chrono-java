@@ -42,8 +42,8 @@ class GroupingTest {
 
     @Test void 시_범위의_끝() {
         LocalDateTime start = LocalDateTime.of(2026, 10, 30, 15, 0);
-        assertEquals(LocalDateTime.of(2026, 10, 30, 17, 0), Grouping.alignEnd(start, TimeParser.parse("5시").get(0).components()));
+        assertEquals(LocalDateTime.of(2026, 10, 30, 17, 0), Grouping.alignEnd(start, TimeParser.parse("5시").get(0).components(), ResolveFixtures.OPTS));
         LocalDateTime late = LocalDateTime.of(2026, 10, 30, 23, 0);
-        assertEquals(LocalDateTime.of(2026, 10, 31, 1, 0), Grouping.alignEnd(late, TimeParser.parse("1시").get(0).components()));
+        assertEquals(LocalDateTime.of(2026, 10, 31, 1, 0), Grouping.alignEnd(late, TimeParser.parse("1시").get(0).components(), ResolveFixtures.OPTS));
     }
 }

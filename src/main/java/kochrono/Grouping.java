@@ -79,14 +79,14 @@ final class Grouping {
      * 끝을 시작과 같은 날에 놓고, 시작보다 이르면 오전, 오후를 이어받거나(+12시간) 다음날로 넘긴다.
      * "오후 3~5시"는 17시, "오후 11시부터 1시까지"는 다음날 1시, "오후 3시부터 오전 1시까지"는 다음날 1시
      */
-    static LocalDateTime alignEnd(LocalDateTime start, Components end) {
+    static LocalDateTime alignEnd(LocalDateTime start, Components end, ResolveOptions opts) {
         int hour = end.hour;
-        LocalDateTime r = Calendars.atClock(start.toLocalDate(), hour, end.minute != null ? end.minute : 0);
+        LocalDateTime r = opts.local(Calendars.atClock(start.toLocalDate(), hour, end.minute != null ? end.minute : 0));
         if (!r.isAfter(start)) {
             if (!end.meridiem && hour < 12 && hour + 12 > start.getHour()) {
-                r = Calendars.atClock(r.toLocalDate(), hour + 12, r.getMinute());
+                r = opts.local(Calendars.atClock(r.toLocalDate(), hour + 12, r.getMinute()));
             } else {
-                r = r.plusDays(1);
+                r = opts.local(r.plusDays(1));
             }
         }
         return r;

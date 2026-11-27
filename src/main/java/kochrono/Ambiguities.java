@@ -15,22 +15,23 @@ final class Ambiguities {
         if (c.hour != null && !c.meridiem && !c.midnight && c.hour >= 1 && c.hour <= 12) {
             int used = Resolver.clockHour(c);
             int altHour = used == 12 ? 0 : used < 12 ? used + 12 : used - 12;
-            LocalDateTime alt = Calendars.atClock((dateSet ? d : ref).toLocalDate(), altHour, c.minute != null ? c.minute : 0);
+            LocalDateTime alt = opts.local(
+                    Calendars.atClock((dateSet ? d : ref).toLocalDate(), altHour, c.minute != null ? c.minute : 0));
             if (!dateSet && c.past) {
                 if (alt.isAfter(ref)) {
-                    alt = alt.minusDays(1);
+                    alt = opts.local(alt.minusDays(1));
                 }
             } else if (!dateSet && alt.isBefore(ref)) {
-                alt = alt.plusDays(1);
+                alt = opts.local(alt.plusDays(1));
             }
             set(result, Ambiguity.Reason.MERIDIEM, List.of(alt));
             return;
         }
         // "다음 토요일": 규칙 23(오늘 제외 가장 가까운)과 "다음 주 토요일"이 다르면 후보로
         if (c.weekdayDir == Components.WeekdayDir.NEXT && c.weekday != null) {
-            LocalDateTime alt = Resolver.startOfWeek(ref, opts.weekStart())
-                    .plusDays(7 + Resolver.offsetInWeek(c.weekday, opts.weekStart()));
-            alt = alt.withHour(d.getHour()).withMinute(d.getMinute());
+            LocalDateTime alt = opts.local(Resolver.startOfWeek(ref, opts)
+                    .plusDays(7 + Resolver.offsetInWeek(c.weekday, opts.weekStart())));
+            alt = opts.local(Calendars.atClock(alt.toLocalDate(), d.getHour(), d.getMinute()));
             if (!alt.equals(d)) {
                 set(result, Ambiguity.Reason.NEXT_WEEKDAY, List.of(alt));
                 return;

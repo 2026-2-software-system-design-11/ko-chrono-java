@@ -22,9 +22,9 @@ final class RecurrenceResolver {
         }
         LocalDateTime ref = opts.referenceDate();
         boolean hasTime = c.hour != null;
-        LocalDateTime today = ref.toLocalDate().atStartOfDay();
+        LocalDateTime today = opts.local(ref.toLocalDate().atStartOfDay());
         Occurrence at = new Occurrence(c, opts, hasTime, today);
-        LocalDateTime d = first(r, at, ref, today);
+        LocalDateTime d = first(r, at, opts, today);
         if (d == null) {
             return null;
         }
@@ -32,9 +32,11 @@ final class RecurrenceResolver {
         // 규칙 34: "10주 동안 매주 월요일"은 오늘(또는 "A부터"의 A)부터 그 기간의 마지막 날 23:59까지
         if (c.durationDays != null || c.durationMonths != null) {
             // N달 뒤 같은 날의 전날까지. 그 달에 없는 날이면 말일로 맞춘다 (11/30에서 3달이면 2/28의 전날)
-            YearMonth month = YearMonth.from(today).plusMonths(c.durationMonths != null ? c.durationMonths : 0);
-            LocalDateTime until = Calendars.sameDayIn(month, today.getDayOfMonth())
-                    .plusDays((c.durationDays != null ? c.durationDays : 0) - 1).atTime(23, 59);
+            YearMonth month = Calendars.yearMonth(today.getYear(),
+                    today.getMonthValue() - 1 + (c.durationMonths != null ? c.durationMonths : 0));
+            LocalDateTime until = opts.local(Calendars.sameDayIn(month, today.getDayOfMonth()).atStartOfDay());
+            until = opts.local(until.plusDays((c.durationDays != null ? c.durationDays : 0) - 1));
+            until = opts.local(until.toLocalDate().atTime(23, 59));
             if (until.isBefore(d)) {
                 return null;
             }
@@ -55,8 +57,8 @@ final class RecurrenceResolver {
     /** 그날의 발생 시각과, 그 시각이 기준 이후인지 */
     private record Occurrence(Components c, ResolveOptions opts, boolean hasTime, LocalDateTime today) {
         LocalDateTime at(LocalDateTime day) {
-            return hasTime ? Calendars.atClock(day.toLocalDate(), Resolver.clockHour(c), c.minute != null ? c.minute : 0)
-                    : Calendars.atClock(day.toLocalDate(), opts.defaultHour(), 0);
+            return opts.local(hasTime ? Calendars.atClock(day.toLocalDate(), Resolver.clockHour(c), c.minute != null ? c.minute : 0)
+                    : Calendars.atClock(day.toLocalDate(), opts.defaultHour(), 0));
         }
 
         boolean ok(LocalDateTime x) {
@@ -64,17 +66,19 @@ final class RecurrenceResolver {
         }
     }
 
-    private static LocalDateTime first(RecurSpec r, Occurrence o, LocalDateTime ref, LocalDateTime today) {
+    private static LocalDateTime first(RecurSpec r, Occurrence o, ResolveOptions opts, LocalDateTime today) {
+        LocalDateTime ref = opts.referenceDate();
         if (r.freq() == Frequency.MINUTELY || r.freq() == Frequency.HOURLY) {
-            return ref.withSecond(0).withNano(0).plusMinutes((long) r.interval() * (r.freq() == Frequency.HOURLY ? 60 : 1));
+            return opts.local(ref.withSecond(0).withNano(0)
+                    .plusMinutes((long) r.interval() * (r.freq() == Frequency.HOURLY ? 60 : 1)));
         }
         if (r.freq() == Frequency.DAILY || (r.byWeekday().isEmpty() && r.byMonthDay() == null && r.byMonth() == null)) {
             LocalDateTime d = o.at(today);
-            return o.ok(d) ? d : d.plusDays(1);
+            return o.ok(d) ? d : opts.local(d.plusDays(1));
         }
         if (r.freq() == Frequency.WEEKLY) {
             for (int i = 0; i < 14; i++) {
-                LocalDateTime day = today.plusDays(i);
+                LocalDateTime day = opts.local(Calendars.constructed(today.toLocalDate().atStartOfDay()).plusDays(i));
                 if (r.byWeekday().contains(Calendars.weekdayNumber(day.toLocalDate())) && o.ok(o.at(day))) {
                     return o.at(day);
                 }
@@ -83,7 +87,7 @@ final class RecurrenceResolver {
         }
         if (r.freq() == Frequency.MONTHLY) {
             for (int k = 0; k < 24; k++) {
-                YearMonth month = YearMonth.from(today).plusMonths(k);
+                YearMonth month = Calendars.yearMonth(today.getYear(), today.getMonthValue() - 1 + k);
                 Integer dom = r.byWeekdayNth() != null
                         ? Calendars.nthWeekday(month, r.byWeekday().get(0), r.byWeekdayNth())
                         : r.byMonthDay() == -1 ? Integer.valueOf(month.lengthOfMonth()) : r.byMonthDay();
@@ -99,7 +103,7 @@ final class RecurrenceResolver {
         }
         // YEARLY: 2월 29일은 다음 윤년까지
         for (int k = 0; k < 9; k++) {
-            YearMonth month = YearMonth.of(today.getYear() + k, r.byMonth());
+            YearMonth month = Calendars.yearMonth(today.getYear() + k, r.byMonth() - 1);
             if (!month.isValidDay(r.byMonthDay())) {
                 continue;
             }
