@@ -5,8 +5,15 @@ package kochrono;
  * 원본에서 값이 없을 때(undefined)와 같은 뜻이다. 참 거짓 표시는 원본에서 참으로만 쓰므로 boolean으로 둔다.
  */
 final class Components {
+    Integer year;
+
     /** 1~12 */
     Integer month;
+    Integer day;
+
+    /** 0~23 */
+    Integer hour;
+    Integer minute;
 
     /** 기준일로부터 일 단위 이동 (내일 = +1) */
     Long dayOffset;
@@ -22,6 +29,9 @@ final class Components {
 
     /** 월 안의 위치: 초(1일), 중순(15일), 말(마지막 날) */
     MonthPart monthPart;
+
+    /** 오전, 오후 등이 명시됨 (15:30 같은 24시간 표기 포함). 시 범위의 끝을 맞출 때 쓴다 */
+    boolean meridiem;
 
     /** 시 단위 상대 이동 */
     Long hourOffset;
