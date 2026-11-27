@@ -52,4 +52,14 @@ class DateRulesTest {
         assertEquals(at(2027, 3, 14, 3, 30), r.date().toLocalDateTime());
         assertEquals(at(2027, 3, 14, 15, 0), r.end().toLocalDateTime());
     }
+
+    @Test void 끝에_일만_있는_구간은_밀린_시각을_다음_달로_가져간다() {
+        // 3월 14일 02:30은 03:30이 되고, 시작보다 앞이라 다음 달로 넘길 때 그 03:30을 쓴다
+        for (String text : new String[] {"3월 20일부터 14일 새벽 2시 30분까지", "3월 20일부터 14일 새벽 2시 30분"}) {
+            ParseResult r = KoChrono.parse(text, ParseOptions.defaults()
+                    .withReferenceDate(at(2027, 3, 20, 10, 0).atZone(ZoneId.of("America/Los_Angeles"))));
+            assertEquals(at(2027, 3, 20, 0, 0), r.date().toLocalDateTime(), text);
+            assertEquals(at(2027, 4, 14, 3, 30), r.end().toLocalDateTime(), text);
+        }
+    }
 }

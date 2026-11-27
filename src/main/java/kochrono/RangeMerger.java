@@ -65,7 +65,9 @@ final class RangeMerger {
             LocalTime time = end.toLocalTime().withSecond(0).withNano(0);
             end = opts.local(Calendars.dayCountedFrom(month, bc.day).atTime(time));
             if (end.isBefore(a.date)) {
-                end = opts.local(Calendars.dayCountedFrom(month.plusMonths(1), bc.day).atTime(time));
+                // 원본은 바로 앞에서 만든 end의 시와 분을 다시 읽는다. 서머타임으로 밀렸으면 밀린 시각이다
+                LocalTime shifted = end.toLocalTime().withSecond(0).withNano(0);
+                end = opts.local(Calendars.dayCountedFrom(month.plusMonths(1), bc.day).atTime(shifted));
             }
         }
         // "월요일부터 금요일까지": 끝 요일이 시작보다 앞이면 다음 주.
