@@ -1,5 +1,7 @@
 package kochrono;
 
+import java.util.List;
+
 /**
  * 파서들이 추출하는 중간 결과. 날짜와 시간 중 아는 것만 채우고 모르는 것은 null로 둔다.
  * 원본에서 값이 없을 때(undefined)와 같은 뜻이다. 참 거짓 표시는 원본에서 참으로만 쓰므로 boolean으로 둔다.
@@ -77,8 +79,17 @@ final class Components {
     /** "N째 주": 1~5, 마지막은 -1 */
     Integer nthWeek;
 
+    /** "이번 주 내내": 그 기간 전체 */
+    boolean whole;
+
+    /** 뒤따르는 말이 과거형 ("3시에 만났어") */
+    boolean past;
+
     /** 이 조각이 "~까지" 종료점인지 */
     boolean isEnd;
+
+    /** 이 조각이 "~부터" 시작점인지 */
+    boolean isStart;
 
     enum WeekdayDir { PAST, NEXT }
 
@@ -87,5 +98,48 @@ final class Components {
     enum LunarHoliday { SEOLLAL, CHUSEOK, BUDDHA }
 
     record LunarDate(int month, int day, boolean leap) {
+    }
+
+    /** 원본의 {@code Object.assign({}, ...list)}: 뒤에 오는 조각의 값이 앞의 값을 덮는다 */
+    static Components merge(List<Components> list) {
+        Components c = new Components();
+        for (Components x : list) {
+            c.year = pick(x.year, c.year);
+            c.month = pick(x.month, c.month);
+            c.day = pick(x.day, c.day);
+            c.hour = pick(x.hour, c.hour);
+            c.minute = pick(x.minute, c.minute);
+            c.dayOffset = pick(x.dayOffset, c.dayOffset);
+            c.weekOffset = pick(x.weekOffset, c.weekOffset);
+            c.weekday = pick(x.weekday, c.weekday);
+            c.weekdayDir = pick(x.weekdayDir, c.weekdayDir);
+            c.lunar = pick(x.lunar, c.lunar);
+            c.lunarDate = pick(x.lunarDate, c.lunarDate);
+            c.recur = pick(x.recur, c.recur);
+            c.yearOffset = pick(x.yearOffset, c.yearOffset);
+            c.monthOffset = pick(x.monthOffset, c.monthOffset);
+            c.monthPart = pick(x.monthPart, c.monthPart);
+            c.hourOffset = pick(x.hourOffset, c.hourOffset);
+            c.minuteOffset = pick(x.minuteOffset, c.minuteOffset);
+            c.durationDays = pick(x.durationDays, c.durationDays);
+            c.durationMonths = pick(x.durationMonths, c.durationMonths);
+            c.durationMinutes = pick(x.durationMinutes, c.durationMinutes);
+            c.nthWeek = pick(x.nthWeek, c.nthWeek);
+            c.weekend |= x.weekend;
+            c.sameDay |= x.sameDay;
+            c.approximate |= x.approximate;
+            c.sameTime |= x.sameTime;
+            c.meridiem |= x.meridiem;
+            c.midnight |= x.midnight;
+            c.whole |= x.whole;
+            c.past |= x.past;
+            c.isEnd |= x.isEnd;
+            c.isStart |= x.isStart;
+        }
+        return c;
+    }
+
+    private static <T> T pick(T later, T earlier) {
+        return later != null ? later : earlier;
     }
 }
