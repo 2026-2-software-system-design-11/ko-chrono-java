@@ -61,6 +61,55 @@ final class Days {
         return true;
     }
 
+    /** 3. N째 주 (규칙 22), 4. 주와 요일 */
+    static boolean week(Components c, ResolveOptions opts, Resolver.DateState s) {
+        LocalDateTime ref = opts.referenceDate();
+        if (c.nthWeek != null) {
+            // 달은 1, 2단계에서 정해진 달, 없으면 기준 달
+            YearMonth month = YearMonth.from(s.dateSet ? s.d : ref);
+            int target = c.weekday != null ? c.weekday : opts.weekStart() == WeekStart.MONDAY ? 1 : 0;
+            Integer day = Calendars.nthWeekday(month, target, c.nthWeek);
+            // "11월 다섯째 주 토요일"처럼 없는 날짜는 null
+            if (day == null) {
+                return false;
+            }
+            s.d = month.atDay(day).atStartOfDay();
+            s.dateSet = true;
+        } else if (c.weekday != null && c.weekOffset == null && c.day != null) {
+            // "11월 5일 목요일": 날짜가 우선. 요일이 안 맞으면 어느 쪽이 맞는지 모르므로 null
+            return Calendars.weekdayNumber(s.d.toLocalDate()) == c.weekday;
+        } else if (c.weekOffset != null || c.weekday != null) {
+            s.d = weekDay(c, opts, s);
+            s.dateSet = true;
+        }
+        return true;
+    }
+
+    private static LocalDateTime weekDay(Components c, ResolveOptions opts, Resolver.DateState s) {
+        LocalDateTime ref = opts.referenceDate();
+        LocalDateTime today = ref.toLocalDate().atStartOfDay();
+        if (c.weekOffset != null && c.sameDay) {
+            // "다음주 이맘때"는 7일 뒤
+            return today.plusDays(c.weekOffset * 7L);
+        }
+        if (c.weekOffset != null) {
+            LocalDateTime sow = Resolver.startOfWeek(ref, opts.weekStart()).plusDays(c.weekOffset * 7L);
+            return c.weekday != null ? sow.plusDays(Resolver.offsetInWeek(c.weekday, opts.weekStart())) : sow;
+        }
+        // 요일 단독: 오늘 포함, 가장 가까운 미래의 그 요일
+        int dow = Calendars.weekdayNumber(today.toLocalDate());
+        // "주말" 단독인데 오늘이 일요일이면 오늘
+        int diff = c.weekend && dow == 0 ? 0 : (c.weekday - dow + 7) % 7;
+        // "다음 금요일"은 오늘 제외 미래, "지난 금요일"은 오늘 제외 과거
+        if (c.weekdayDir == Components.WeekdayDir.NEXT && diff == 0) {
+            diff = 7;
+        }
+        if (c.weekdayDir == Components.WeekdayDir.PAST) {
+            diff = diff == 0 ? -7 : diff - 7;
+        }
+        return today.plusDays(diff);
+    }
+
     static int partDay(YearMonth month, Components.MonthPart part) {
         return switch (part) {
             case START -> 1;

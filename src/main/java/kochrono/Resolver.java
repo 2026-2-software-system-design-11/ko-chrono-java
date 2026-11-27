@@ -1,6 +1,7 @@
 package kochrono;
 
 import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -73,6 +74,9 @@ final class Resolver {
         if (c.monthOffset != null && !Days.relativeMonth(c, ref, s)) {
             return false;
         }
+        if (!Days.week(c, opts, s)) {
+            return false;
+        }
         // 일 단위 상대 이동
         if (c.dayOffset != null) {
             if (!s.dateSet) {
@@ -121,5 +125,17 @@ final class Resolver {
     static int clockHour(Components c) {
         int h = c.hour;
         return !c.meridiem && h >= 1 && h <= 6 ? h + 12 : h;
+    }
+
+    static LocalDateTime startOfWeek(LocalDateTime d, WeekStart weekStart) {
+        LocalDate day = d.toLocalDate();
+        int dow = Calendars.weekdayNumber(day);
+        int diff = weekStart == WeekStart.MONDAY ? (dow + 6) % 7 : dow;
+        return day.minusDays(diff).atStartOfDay();
+    }
+
+    /** 주의 시작 요일에서 그 요일까지 며칠인지 */
+    static int offsetInWeek(int weekday, WeekStart weekStart) {
+        return weekStart == WeekStart.MONDAY ? (weekday + 6) % 7 : weekday;
     }
 }
