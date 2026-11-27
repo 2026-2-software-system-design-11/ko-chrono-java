@@ -34,4 +34,8 @@ class RealWorldTest {
     @TestFactory @DisplayName("메신저 문장") Stream<DynamicTest> messenger() {
         return run(MessengerCases.CASES);
     }
+
+    @TestFactory @DisplayName("스트레스 예문") Stream<DynamicTest> stress() {
+        return run(StressCases.CASES);
+    }
 }
