@@ -17,6 +17,8 @@ final class Pipeline {
     static final Pattern FROM = JsRegex.compile("^\\s*(부터|~)\\s*");
     // "이번 주 내내"는 그 기간 전체
     private static final Pattern WHOLE = JsRegex.compile("^\\s*내내");
+    // 두 날짜 표현이 한 절에 있다고 보는 사이 글자: "1시에 점심 먹었어"의 "에 "
+    private static final Pattern SAME_CLAUSE = JsRegex.compile("^(?:\\s|에|엔|은|는|도|쯤)*$");
 
     private Pipeline() {
     }
@@ -24,6 +26,7 @@ final class Pipeline {
     /** 원본의 parseLocal */
     static List<LocalResult> run(String text, ResolveOptions opts) {
         List<List<Fragment>> groups = Grouping.group(dedupe(text), text);
+        boolean[] pastOf = pastOf(groups, text);
         List<LocalResult> results = new ArrayList<>();
         for (int gi = 0; gi < groups.size(); gi++) {
             List<Fragment> g = groups.get(gi);
@@ -42,6 +45,10 @@ final class Pipeline {
             }
             if (FROM.matcher(tail).find()) {
                 last.components().isStart = true;
+            }
+            // 규칙 37: 마감이나 구간이 아닌 표현 뒤의 말이 과거형이면 가까운 과거로 해석한다
+            if (!hasUntil && !last.components().isStart && pastOf[gi]) {
+                last.components().past = true;
             }
             LocalResult r = Resolver.resolve(g, opts);
             if (r == null) {
@@ -72,5 +79,22 @@ final class Pipeline {
             }
         }
         return kept;
+    }
+
+    /**
+     * 규칙 37: 표현 뒤의 말이 과거형인지. 뒤에서부터 본다. "1시에 점심 먹었어"처럼 다음 표현이
+     * 조사만 사이에 두고 이어지면 같은 절이라 그쪽 시제를 따른다
+     */
+    private static boolean[] pastOf(List<List<Fragment>> groups, String text) {
+        boolean[] pastOf = new boolean[groups.size()];
+        for (int gi = groups.size() - 1; gi >= 0; gi--) {
+            List<Fragment> g = groups.get(gi);
+            Fragment last = g.get(g.size() - 1);
+            List<Fragment> next = gi + 1 < groups.size() ? groups.get(gi + 1) : null;
+            int from = last.index() + last.text().length();
+            String tail = Texts.slice(text, from, next != null ? next.get(0).index() : text.length());
+            pastOf[gi] = next != null && SAME_CLAUSE.matcher(tail).find() ? pastOf[gi + 1] : PastTense.isPastClause(tail);
+        }
+        return pastOf;
     }
 }
