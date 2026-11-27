@@ -65,6 +65,14 @@ final class Resolver {
     /** 날짜 부분. 없는 날짜면 false */
     private static boolean resolveDay(Components c, ResolveOptions opts, DateState s) {
         LocalDateTime ref = opts.referenceDate();
+        boolean isLunar = false;
+        boolean hasYear = c.year != null || c.yearOffset != null;
+        if (!isLunar && (hasYear || c.month != null || c.day != null) && !Days.absolute(c, ref, s)) {
+            return false;
+        }
+        if (c.monthOffset != null && !Days.relativeMonth(c, ref, s)) {
+            return false;
+        }
         // 일 단위 상대 이동
         if (c.dayOffset != null) {
             if (!s.dateSet) {
