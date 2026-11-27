@@ -51,17 +51,24 @@ final class Days {
         // "5일까지"처럼 일만 있으면: 오늘이 그날을 넘었으면 다음 달, 아니면 이번 달 (오늘 포함).
         // 그 달에 없는 날("11월에 31일")은 아래에서 버린다
         if (!hasYear && c.month == null && c.day != null && c.monthOffset == null && c.nthWeek == null) {
-            if (c.day < ref.getDayOfMonth()) {
-                ym = ym.plusMonths(1);
+            // 과거형(규칙 37)이면 반대로: 아직 안 온 날이면 지난달
+            if (c.past ? c.day > ref.getDayOfMonth() : c.day < ref.getDayOfMonth()) {
+                ym = ym.plusMonths(c.past ? -1 : 1);
             }
+            s.bare = Resolver.Bare.DAY;
         }
         // 연도 미지정이고 이미 지났으면 내년으로.
         // 월일("3월 1일")은 그 날이, 월("3월", "2월 말")은 그 달이 통째로 지났을 때.
         // 그 해에 없는 날(평년의 2월 29일)은 원본처럼 그 달 1일부터 센 날(3월 1일)로 비교한다
         if (!hasYear && c.month != null) {
-            if (Calendars.dayCountedFrom(ym, c.day != null ? c.day : ym.lengthOfMonth()).atTime(23, 59).isBefore(ref)) {
-                ym = ym.plusYears(1);
+            // 과거형(규칙 37)이면 반대로: 그 날(달)이 아직 시작되지 않았으면 작년
+            boolean move = c.past
+                    ? Calendars.dayCountedFrom(ym, c.day != null ? c.day : 1).atStartOfDay().isAfter(ref)
+                    : Calendars.dayCountedFrom(ym, c.day != null ? c.day : ym.lengthOfMonth()).atTime(23, 59).isBefore(ref);
+            if (move) {
+                ym = ym.plusYears(c.past ? -1 : 1);
             }
+            s.bare = Resolver.Bare.YEAR;
         }
         int day = c.day != null ? c.day : c.month != null || (hasYear && !c.sameDay) ? 1 : ref.getDayOfMonth();
         if (c.monthPart != null) {
@@ -138,6 +145,13 @@ final class Days {
         }
         if (c.weekdayDir == Components.WeekdayDir.PAST) {
             diff = diff == 0 ? -7 : diff - 7;
+        }
+        // 과거형(규칙 37): 오늘 포함 가장 가까운 과거의 그 요일
+        if (c.past && c.weekdayDir == null) {
+            if (diff > 0) {
+                diff -= 7;
+            }
+            s.bare = Resolver.Bare.WEEK;
         }
         return today.plusDays(diff);
     }

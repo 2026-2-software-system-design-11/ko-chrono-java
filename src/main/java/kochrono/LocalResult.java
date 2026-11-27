@@ -14,6 +14,7 @@ final class LocalResult {
     boolean hasTime;
     Ambiguity.Reason ambiguity;
     List<LocalDateTime> alternatives = List.of();
+    boolean past;
 
     /** 그룹의 마지막 조각이 끝나는 위치. 원본의 _end */
     int endIndex;

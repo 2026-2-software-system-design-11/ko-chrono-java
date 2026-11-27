@@ -3,10 +3,14 @@ package kochrono;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 /** 묶인 조각을 기준 시각에 대입해 날짜로 만든다. 모든 날짜 계산은 여기와 RecurrenceResolver에서만 한다 */
 final class Resolver {
+    /** 연도, 달, 주를 말하지 않아 "가까운 쪽"으로 고른 날짜의 주기. 과거형에서 한 주기 되돌릴 때 쓴다 */
+    enum Bare { WEEK, DAY, YEAR }
+
     private Resolver() {
     }
 
@@ -49,6 +53,7 @@ final class Resolver {
         result.index = group.get(0).index();
         result.hasTime = hasTime;
         Ambiguities.apply(result, c, s.dateSet, opts);
+        result.past = c.past;
         Fragment last = group.get(group.size() - 1);
         result.endIndex = last.index() + last.text().length();
         return Periods.apply(result, c, s.dateSet, ref) ? result : null;
@@ -58,6 +63,7 @@ final class Resolver {
     static final class DateState {
         LocalDateTime d;
         boolean dateSet;
+        Bare bare;
 
         DateState(LocalDateTime d) {
             this.d = d;
@@ -99,6 +105,10 @@ final class Resolver {
         if (c.hour != null && !s.dateSet) {
             // 시간만 있고 날짜가 없으면 오늘, 이미 지났으면 내일
             LocalDateTime d = Calendars.atClock(ref.toLocalDate(), clockHour(c), minute);
+            // 과거형(규칙 37)이면 반대로: 아직 안 왔으면 어제
+            if (c.past) {
+                return d.isAfter(ref) ? d.minusDays(1) : d;
+            }
             return d.isBefore(ref) ? d.plusDays(1) : d;
         }
         if (c.hour != null) {
@@ -106,6 +116,10 @@ final class Resolver {
             // "내일 자정"은 내일이 끝나는 시점
             if (c.midnight) {
                 d = d.plusDays(1);
+            }
+            // 과거형(규칙 37): "금요일 5시에 냈어"(금요일 14시)처럼 오늘로 잡았는데 시각이 아직이면 한 주기 앞으로
+            if (c.past && s.bare != null && d.isAfter(ref)) {
+                return stepBack(d, s.bare);
             }
             return d;
         }
@@ -129,6 +143,16 @@ final class Resolver {
     static int clockHour(Components c) {
         int h = c.hour;
         return !c.meridiem && h >= 1 && h <= 6 ? h + 12 : h;
+    }
+
+    /** 과거형(규칙 37): 같은 요일, 일, 월일의 바로 앞 것. 그 달이나 해에 없는 날이면 null */
+    private static LocalDateTime stepBack(LocalDateTime d, Bare unit) {
+        if (unit == Bare.WEEK) {
+            return d.minusDays(7);
+        }
+        // 3월 31일의 한 달 전(2월 31일)처럼 없는 날짜는 추측하지 않는다
+        YearMonth month = YearMonth.from(d).minusMonths(unit == Bare.DAY ? 1 : 12);
+        return month.isValidDay(d.getDayOfMonth()) ? month.atDay(d.getDayOfMonth()).atTime(d.toLocalTime()) : null;
     }
 
     static LocalDateTime startOfWeek(LocalDateTime d, WeekStart weekStart) {
