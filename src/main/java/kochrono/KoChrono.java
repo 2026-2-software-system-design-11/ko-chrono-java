@@ -9,6 +9,11 @@ import java.util.function.Function;
 
 /**
  * 한국어 문장에서 날짜와 시각을 찾아 값으로 바꾼다.
+ *
+ * <pre>{@code
+ * ParseResult r = KoChrono.parse("다음주 화요일 오후 3시");
+ * ZonedDateTime when = r.date();
+ * }</pre>
  */
 public final class KoChrono {
     private KoChrono() {
@@ -32,16 +37,28 @@ public final class KoChrono {
         return Pipeline.run(text, opts).stream().map(r -> toResult(r, at)).toList();
     }
 
+    public static List<ParseResult> parseAll(String text) {
+        return parseAll(text, null);
+    }
+
     /** 문장에서 첫 번째 날짜와 시간 표현을 찾는다. 없으면 null */
     public static ParseResult parse(String text, ParseOptions options) {
         List<ParseResult> all = parseAll(text, options);
         return all.isEmpty() ? null : all.get(0);
     }
 
+    public static ParseResult parse(String text) {
+        return parse(text, null);
+    }
+
     /** parse의 date만 돌려주는 단축형. 구간이면 시작 시각. 없으면 null */
     public static ZonedDateTime parseDate(String text, ParseOptions options) {
         ParseResult r = parse(text, options);
         return r != null ? r.date() : null;
+    }
+
+    public static ZonedDateTime parseDate(String text) {
+        return parseDate(text, null);
     }
 
     private static ParseResult toResult(LocalResult r, Function<LocalDateTime, ZonedDateTime> at) {

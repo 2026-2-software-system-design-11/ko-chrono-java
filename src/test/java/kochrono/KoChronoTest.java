@@ -28,4 +28,10 @@ class KoChronoTest {
         ParseResult r = KoChrono.parse("오후 3시", OPTS.withTimezone("UTC"));
         assertEquals(at(2026, 10, 31, 0, 0).toInstant(), r.date().toInstant());
     }
+
+    @Test void 옵션_없이_부르면_지금이_기준() {
+        assertEquals("내일", KoChrono.parse("내일").text());
+        assertEquals(2, KoChrono.parseAll("내일 아니면 모레").size());
+        assertNull(KoChrono.parseDate("안녕하세요"));
+    }
 }
