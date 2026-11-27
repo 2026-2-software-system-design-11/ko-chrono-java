@@ -21,6 +21,12 @@ final class Components {
     /** "1년 뒤", "내년 이맘때": 연, 월, 주 이동 때 기준일의 날짜를 유지 */
     boolean sameDay;
 
+    /** "저녁", "아침"처럼 관례로 정한 시각 */
+    boolean approximate;
+
+    /** "내일 이 시간": 기준 시각의 시와 분을 쓴다 */
+    boolean sameTime;
+
     /** 연 단위 이동 (내년 = +1). 있으면 "지난 월일은 내년" 규칙을 쓰지 않는다 */
     Integer yearOffset;
 
@@ -32,6 +38,9 @@ final class Components {
 
     /** 오전, 오후 등이 명시됨 (15:30 같은 24시간 표기 포함). 시 범위의 끝을 맞출 때 쓴다 */
     boolean meridiem;
+
+    /** "자정", "24시", "밤 12시": 날짜가 있으면 그 날의 끝(다음날 00:00) */
+    boolean midnight;
 
     /** 시 단위 상대 이동 */
     Long hourOffset;
@@ -48,4 +57,6 @@ final class Components {
     boolean isEnd;
 
     enum MonthPart { START, MIDDLE, END }
+
+    enum LunarHoliday { SEOLLAL, CHUSEOK, BUDDHA }
 }
