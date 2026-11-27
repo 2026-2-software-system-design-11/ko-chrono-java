@@ -23,10 +23,19 @@ final class Components {
     /** 월 안의 위치: 초(1일), 중순(15일), 말(마지막 날) */
     MonthPart monthPart;
 
+    /** 시 단위 상대 이동 */
+    Long hourOffset;
+
+    /** 분 단위 상대 이동 */
+    Long minuteOffset;
+
     /** "3일간", "2주 동안", "3박 4일": 앞의 날짜부터 이어지는 기간. 날짜 없이 단독이면 결과가 없다 */
     Long durationDays;
     Long durationMonths;
     Long durationMinutes;
+
+    /** 이 조각이 "~까지" 종료점인지 */
+    boolean isEnd;
 
     enum MonthPart { START, MIDDLE, END }
 }
