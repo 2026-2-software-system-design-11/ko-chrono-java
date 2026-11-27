@@ -45,6 +45,23 @@ final class RecurrenceParser {
     // "매년 3월 1일", "해마다 12월 25일", "2년마다 3월 1일"
     private static final Pattern YEARLY = JsRegex.compile("(?:" + YEAR_EVERY + ")\\s*(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일");
 
+    // "매일", "날마다", "매일매일"
+    private static final Pattern DAILY = JsRegex.compile("(?<![가-힣])(?:매일매일|매일|날마다)");
+    // "3일마다", "14일마다", "이틀마다"는 N일 간격 ("3일"이라는 날짜가 아님)
+    private static final Pattern DAYS_INTERVAL = JsRegex.compile("(?<![가-힣\\d])(?:(\\d{1,3})\\s*일|(이틀|사흘))\\s*마다");
+    // "2시간마다", "30분마다", "매시간"
+    private static final Pattern HOURLY = JsRegex.compile("(?<![가-힣\\d])(?:(\\d{1,2}|한|두|세|네|다섯|여섯)\\s*시간\\s*마다|매\\s*시간)");
+    private static final Pattern MINUTELY = JsRegex.compile("(?<!\\d)(\\d{1,3})\\s*분\\s*마다");
+    // "매주 14일", "일주일마다 3일": 매주와 며칠은 같이 올 수 없다 (resolve가 null을 낸다). "3일 동안", "3일 뒤"는 제외
+    private static final Pattern WEEKLY_DAY = JsRegex.compile("(?<![가-힣])(?:" + WEEK_EVERY
+            + ")\\s*(\\d{1,2})\\s*일(?!\\s*(?:마다|간|동안|뒤|후|전|째|만에))");
+    // 주기 말만 쓸 때 뒤에 올 수 있는 것: 한글이 아닌 것, 끝, 조사 ("격주로", "매주에는"). "매달려"는 막는다
+    private static final String EVERY_END = "(?=[^가-힣]|$|(?:로|으로|에|엔|은|는|도)(?![가-힣])|에는)";
+    // 주기 말만 ("매주", "격주로", "2개월마다", "매년"). 요일과 날짜는 첫 발생일(DTSTART)을 따른다
+    private static final Pattern WEEK_ONLY = JsRegex.compile("(?<![가-힣])(?:" + WEEK_EVERY + ")" + EVERY_END);
+    private static final Pattern MONTH_ONLY = JsRegex.compile("(?<![가-힣])(?:" + MONTH_EVERY + ")" + EVERY_END);
+    private static final Pattern YEAR_ONLY = JsRegex.compile("(?<![가-힣])(?:" + YEAR_EVERY + ")" + EVERY_END);
+
     private static final Pattern DAY_NAMES = Pattern.compile("요일|욜");
     private static final Pattern DAY_ITEMS = JsRegex.compile("([월화수목금토일])\\s*~\\s*([월화수목금토일])|([월화수목금토일])");
 
@@ -115,10 +132,56 @@ final class RecurrenceParser {
                 push(out, taken, m, RecurSpec.of(Frequency.WEEKLY, n).withWeekdays(weekdaysOf(m.group(3))));
             }
         }
+        // "매주 14일"은 며칠(day)을 같이 실어 보내 resolve가 null을 내게 한다.
+        // 여기서 안 잡으면 "14일"만 남아 하루짜리 날짜가 된다
+        for (Matcher m = WEEKLY_DAY.matcher(text); m.find(); ) {
+            Integer n = intervalOf(m.group(), m.group(1));
+            if (n == null || !taken.take(m.start(), m.end())) {
+                continue;
+            }
+            Components c = new Components();
+            c.recur = RecurSpec.of(Frequency.WEEKLY, n);
+            c.day = Integer.parseInt(m.group(2));
+            out.add(Fragment.of(m, c));
+        }
         for (Matcher m = DAYS_EVERY.matcher(text); m.find(); ) {
             push(out, taken, m, RecurSpec.of(Frequency.WEEKLY, 1).withWeekdays(weekdaysOf(m.group(1))));
         }
+        for (Matcher m = DAILY.matcher(text); m.find(); ) {
+            push(out, taken, m, RecurSpec.of(Frequency.DAILY, 1));
+        }
+        for (Matcher m = DAYS_INTERVAL.matcher(text); m.find(); ) {
+            int n = m.group(1) != null ? Integer.parseInt(m.group(1)) : m.group(2).equals("이틀") ? 2 : 3;
+            if (n > 0) {
+                push(out, taken, m, RecurSpec.of(Frequency.DAILY, n));
+            }
+        }
+        for (Matcher m = HOURLY.matcher(text); m.find(); ) {
+            Long n = m.group(1) != null ? KoreanNumber.parse(m.group(1)) : Long.valueOf(1);
+            if (n != null && n != 0) {
+                push(out, taken, m, RecurSpec.of(Frequency.HOURLY, n.intValue()));
+            }
+        }
+        for (Matcher m = MINUTELY.matcher(text); m.find(); ) {
+            int n = Integer.parseInt(m.group(1));
+            if (n != 0) {
+                push(out, taken, m, RecurSpec.of(Frequency.MINUTELY, n));
+            }
+        }
+        // 주기 말만 있는 것은 마지막에: 위에서 요일이나 날짜와 함께 잡힌 것이 우선
+        everyOnly(text, WEEK_ONLY, Frequency.WEEKLY, out, taken);
+        everyOnly(text, MONTH_ONLY, Frequency.MONTHLY, out, taken);
+        everyOnly(text, YEAR_ONLY, Frequency.YEARLY, out, taken);
         return out;
+    }
+
+    private static void everyOnly(String text, Pattern re, Frequency freq, List<Fragment> out, Taken taken) {
+        for (Matcher m = re.matcher(text); m.find(); ) {
+            Integer n = intervalOf(m.group(), m.group(1));
+            if (n != null) {
+                push(out, taken, m, RecurSpec.of(freq, n));
+            }
+        }
     }
 
     private static void push(List<Fragment> out, Taken taken, Matcher m, RecurSpec recur) {

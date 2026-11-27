@@ -2,6 +2,7 @@ package kochrono;
 
 import static kochrono.ParserFixtures.one;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -25,5 +26,21 @@ class RecurrenceParserTest {
         assertEquals("FREQ=MONTHLY;BYMONTHDAY=-1", rule("매월 말일"));
         assertEquals("FREQ=MONTHLY;BYDAY=1MO", rule("매달 첫째 주 월요일"));
         assertEquals("FREQ=YEARLY;INTERVAL=2;BYMONTH=3;BYMONTHDAY=1", rule("2년마다 3월 1일"));
+    }
+
+    @Test void 일_시간_분_반복과_주기_말만() {
+        assertEquals("FREQ=DAILY", rule("매일"));
+        assertEquals("FREQ=DAILY;INTERVAL=3", rule("3일마다"));
+        assertEquals("FREQ=HOURLY;INTERVAL=2", rule("2시간마다"));
+        assertEquals("FREQ=MINUTELY;INTERVAL=30", rule("30분마다"));
+        assertEquals("FREQ=MONTHLY;INTERVAL=2", rule("2개월마다"));
+        assertEquals("FREQ=WEEKLY;INTERVAL=2", rule("격주로"));
+        assertTrue(RecurrenceParser.parse("줄에 매달려").isEmpty());
+    }
+
+    @Test void 매주와_며칠은_같이_실어_보낸다() {
+        Components c = one(RecurrenceParser.parse("매주 14일")).components();
+        assertEquals(14, c.day);
+        assertEquals(Frequency.WEEKLY, c.recur.freq());
     }
 }
