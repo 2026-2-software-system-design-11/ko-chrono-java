@@ -25,4 +25,11 @@ class PipelineTest {
         assertEquals("오후 3시", r.text);
         assertEquals(4, r.index);
     }
+
+    @Test void 까지와_내내() {
+        LocalResult r = Pipeline.run("이번달 말까지 제출", OPTS).get(0);
+        assertEquals("이번달 말까지", r.text);
+        assertEquals(List.of(REF, at(2026, 10, 31, 23, 59)), List.of(r.date, r.end));
+        assertEquals(at(2026, 11, 1, 23, 59), Pipeline.run("이번 주 내내", OPTS).get(0).end);
+    }
 }
