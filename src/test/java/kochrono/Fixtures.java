@@ -1,10 +1,14 @@
 package kochrono;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 원본 시험의 도우미를 옮긴 것. 원본은 실행 환경의 로컬 시간대로 Date를 만들므로 여기서는 기본 시간대를 쓴다.
@@ -76,5 +80,38 @@ final class Fixtures {
     /** Date 비교처럼 실제 시점끼리 비교하려고 */
     static List<Instant> instants(List<ZonedDateTime> list) {
         return list.stream().map(ZonedDateTime::toInstant).toList();
+    }
+
+    /** 원본의 { reason, alternatives } */
+    static Ambiguity amb(String code, ZonedDateTime... alternatives) {
+        for (Ambiguity.Reason r : Ambiguity.Reason.values()) {
+            if (r.code().equals(code)) {
+                return new Ambiguity(r, List.of(alternatives));
+            }
+        }
+        throw new IllegalArgumentException(code);
+    }
+
+    /** 원본의 객체 리터럴. 값이 null인 칸은 undefined처럼 빠진다 */
+    static Map<String, Object> obj(Object... kv) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        for (int i = 0; i < kv.length; i += 2) {
+            if (kv[i + 1] != null) {
+                m.put((String) kv[i], kv[i + 1]);
+            }
+        }
+        return m;
+    }
+
+    /** toEqual: undefined 칸을 빼고 같은지 */
+    static void same(Map<String, Object> expected, Map<String, Object> actual) {
+        assertEquals(expected, actual);
+    }
+
+    /** toMatchObject: 기대한 칸만 같은지 */
+    static void matches(Map<String, Object> expected, Map<String, Object> actual) {
+        Map<String, Object> part = new LinkedHashMap<>();
+        expected.keySet().forEach(k -> part.put(k, actual.get(k)));
+        assertEquals(expected, part);
     }
 }
