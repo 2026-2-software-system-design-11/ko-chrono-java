@@ -19,7 +19,16 @@ class KoreanNumberTest {
         assertEquals(15L, KoreanNumber.parse("보름"));
     }
 
+    @Test void 한자어() {
+        assertEquals(10L, KoreanNumber.parse("십"));
+        assertEquals(12L, KoreanNumber.parse("십이"));
+        assertEquals(20L, KoreanNumber.parse("이십"));
+        assertEquals(31L, KoreanNumber.parse("삼십일"));
+        assertEquals(5L, KoreanNumber.parse("오"));
+    }
+
     @Test void 읽지_못하면_null() {
+        assertNull(KoreanNumber.parse("일이"));
         assertNull(KoreanNumber.parse("열셋셋"));
         assertNull(KoreanNumber.parse("abc"));
     }

@@ -20,7 +20,11 @@ final class KoreanNumber {
             Map.entry("나흘", 4L), Map.entry("닷새", 5L), Map.entry("엿새", 6L), Map.entry("이레", 7L),
             Map.entry("여드레", 8L), Map.entry("아흐레", 9L));
 
+    private static final Map<String, Long> SINO = Map.of(
+            "일", 1L, "이", 2L, "삼", 3L, "사", 4L, "오", 5L, "육", 6L, "칠", 7L, "팔", 8L, "구", 9L, "십", 10L);
+
     private static final Pattern DIGITS = Pattern.compile("\\d+");
+    private static final Pattern SINO_ONLY = Pattern.compile("[일이삼사오육칠팔구십]+");
 
     private KoreanNumber() {
     }
@@ -41,6 +45,19 @@ final class KoreanNumber {
                     return NATIVE.get(tens) + rest;
                 }
             }
+        }
+        // 한자어: 십, 십이, 이십, 이십삼
+        if (SINO_ONLY.matcher(s).matches()) {
+            String[] parts = s.split("십", -1);
+            if (parts.length == 1) {
+                return SINO.get(s);
+            }
+            Long tens = parts[0].isEmpty() ? Long.valueOf(1) : SINO.get(parts[0]);
+            Long ones = parts[1].isEmpty() ? Long.valueOf(0) : SINO.get(parts[1]);
+            if (tens == null || ones == null) {
+                return null;
+            }
+            return tens * 10 + ones;
         }
         return null;
     }
