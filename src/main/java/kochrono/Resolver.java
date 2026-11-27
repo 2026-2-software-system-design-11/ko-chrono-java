@@ -48,6 +48,7 @@ final class Resolver {
         result.date = d;
         result.index = group.get(0).index();
         result.hasTime = hasTime;
+        Ambiguities.apply(result, c, s.dateSet, opts);
         Fragment last = group.get(group.size() - 1);
         result.endIndex = last.index() + last.text().length();
         return Periods.apply(result, c, s.dateSet, ref) ? result : null;
